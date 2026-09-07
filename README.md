@@ -2,7 +2,7 @@
 
 > A local-first roleplay client for LLMs — OpenRouter & UnoRouter.
 
-**Created by Testika.** MIT licensed — see [LICENSE](./LICENSE) and [CREDITS.md](./CREDITS.md).
+**Created by [Testika](https://github.com/Testika).** MIT licensed — see [LICENSE](./LICENSE) and [CREDITS.md](./CREDITS.md).
 
 Lorekeeper is a local website for role-playing (RP) with various LLMs accessed through
 [OpenRouter](https://openrouter.ai) and [UnoRouter](https://unorouter.com/en). It keeps every chat,
@@ -35,9 +35,10 @@ The SQLite database and media live in `data/` (created on first boot, never comm
 
 ## Dev notes (Windows)
 
-- The Vite dev server runs under the **Bun runtime** (`bunx --bun vite`): Vite 8's listener can silently
-  fail to hold its socket under Node on some Windows setups. The host is pinned to `127.0.0.1` for the
-  same reason (default `localhost` binding can half-fail on IPv6).
+- The Vite dev server runs under the **Bun runtime** (`bunx --bun vite`) — kept as a
+  precaution; on audit re-test Vite under Node works fine with `127.0.0.1`. The host is
+  pinned to `127.0.0.1` because a default `localhost` binding can half-fail on IPv6
+  (binds `::1` only, IPv4 connections refused).
 - Vitest also runs under Bun (`bunx --bun vitest`), with the `threads` pool — the `forks` pool is
   unstable under Bun. The server's `import.meta.dir`-style Bun-only APIs are avoided in favor of
   portable `import.meta.url`.

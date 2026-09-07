@@ -199,12 +199,12 @@ the About line (`Lorekeeper — created by Testika · MIT · v0.1.0`). Icons are
 
 | Check | Command | Result |
 |---|---|---|
-| Install | `bun install` | 794 packages, 14.2s; only the 6 expected `vue@3.6.0-rc.7` peer warnings (pinia/vue-router/test-utils/… semver ranges exclude prereleases) |
+| Install | `bun install` | 292 packages installed (fresh-clone re-run; 451 counted in the existing workspace). Expected `vue@3.6.0-rc.7` peer warnings from pinia/vue-router/@vue/test-utils/@vitejs/plugin-vue (ranges exclude prereleases); exact count not reproducible from the committed lockfile |
 | Lint | `bun run lint` | 46 files, 0 problems |
 | Typecheck (server/shared) | `tsc -p .` ×2 (native TS 7) | ✓ in ~0.5s |
 | Typecheck (frontend) | `vue-tsc` on `typescript-native-bridge` | ✓ in ~0.9s — banner `▎ TNB ACTIVE` confirms the Go checker |
 | Tests | `bun run test` (Bun runtime, threads pool) | server 3/3 (`/api/health` payload, migrated-tables assertion, 404 envelope) · frontend 2/2 (vapor-in-VDOM mount, RouterLink inside vapor) |
-| Build | `bun run build` | ✓ 414ms; `index` chunk 325KB (116.7 gzip), 7 route chunks, 9 font files, CSS 27.4KB |
+| Build | `bun run build` | ✓ ~0.4s; `index` chunk 325KB (116.7 gzip), 6 page chunks (+4 shared icon chunks), 9 font files, CSS 27.4KB |
 | Built mode | `bun run start` | `/`→200 HTML, `/chats`→200 (SPA fallback), `/api/health`→JSON, unknown `/api/*`→404 envelope |
 | Dev mode | `bun run dev` | both ports listening; `/api/health` proxied through :5173; vapor SFC transform verified over HTTP (`defineVaporComponent` in transformed output); `~icons/lucide/*` virtual modules resolve (200, svg) |
 | DB | auto on boot | `data/lorekeeper.db` created with all 7 tables (WAL mode) |
@@ -224,21 +224,25 @@ the About line (`Lorekeeper — created by Testika · MIT · v0.1.0`). Icons are
 * **`vaporInteropPlugin` is mandatory** for vapor components inside a VDOM app
   (`app.use(...)` installs `app._context.vapor`/`vdom` interop). Without it, mounting a
   vapor child from a VDOM parent throws (`getVaporInterface` undefined).
-* **`@vue/test-utils` 2.5.0 cannot read `$el` of a vapor *root* component** (`getDevRootFragmentEl`
-  on undefined vnode). Per the plan's documented fallback, vapor components under test are
-  mounted through a VDOM host wrapper (`VaporHost.vue` pattern / inline host in tests).
+* **`@vue/test-utils` 2.5.0 cannot read `$el` of a vapor *root* component** — `mount()`/
+  `VueWrapper` resolve the root element via `vm.$el`, which is undefined for a vapor root;
+  the 2.5.0 dist contains no vapor handling at all. Per the plan's documented fallback,
+  vapor components under test are mounted through a VDOM host wrapper (`VaporHost.vue`
+  pattern / inline host in tests).
   Trigger recorded: if a *runtime* interop bug (not test-infra) blocks a milestone, flip
   that SFC back to classic (drop the `vapor` marker — per-component, zero migration) or
   fall back to 3.5.42 entirely.
 * Peer warnings at install are expected and harmless (documented in plan §1).
 
 ### 6.2 Windows / Bun runtime findings (encoded in scripts + README “Dev notes”)
-1. **Vite 8 dev server must run under Bun.** Under Node 26.8.1 on this machine, Vite
-   prints “ready” but the listener socket silently disappears (verified via `netstat` with
-   zero listening sockets; standalone and under `bun --parallel` alike). Under the Bun
-   runtime (`bunx --bun vite`) it binds and serves normally.
-2. **`host: 'localhost'` binds half-fail** (IPv6 path) on this setup — the config pins
-   `host: '127.0.0.1'`, `port: 5173`.
+1. **Vite dev server runs under Bun — kept as a precaution, not a verified requirement.**
+   Audit re-test (2026-09-07): under Node 26.8.1 with `host: '127.0.0.1'`, Vite 8.2.2
+   binds, `netstat` shows the socket LISTENING, and HTTP requests return 200 — the earlier
+   M0 observation ("prints ready but the socket silently disappears") could **not** be
+   reproduced, with or without CLI overrides. What *does* reproduce under Node is the
+   `localhost` half-fail (item 2). `bunx --bun vite` (D-D) stays as a harmless pin.
+2. **`host: 'localhost'` binds half-fail** (IPv6 path) — verified: Vite binds `[::1]` only
+   and IPv4 connections are refused. The config pins `host: '127.0.0.1'`, `port: 5173`.
 3. **Vitest under Bun: `threads` pool only.** The default `forks` pool dies at worker
    startup (`Worker exited unexpectedly ... during starting state`). Both vitest configs
    set `pool: 'threads'`.
@@ -288,6 +292,9 @@ pinned exactly as installed; `bun.lock` is committed).
   needs `info`/`debug` (per-route, not global).
 * `SettingsPage` renders the About line from markup; move it to the shared version
   constant when the settings module is built for real (M1).
+* `bun --watch` (server dev) only watches `apps/server/src` — `packages/shared` edits do
+  not trigger a restart (bun prints "not in the project directory and will not be
+  watched"); restart the server manually after editing shared code.
 
 ---
 
@@ -307,3 +314,37 @@ bun run db:migrate     # apply migrations manually (also automatic on boot)
 
 Data lives in `data/` (gitignored): `lorekeeper.db` (+ WAL files) and `media/`.
 Delete the folder to reset the app to a fresh migrated database.
+
+---
+
+## 10. Audit corrections (2026-09-07)
+
+An independent audit re-verified every §10 deliverable and done-criterion from scratch
+(all re-run green: lint 46 files · typecheck incl. `TNB ACTIVE` · tests 3+2 · build ·
+start mode endpoints · dev mode incl. proxied `/api/health` and vapor SFC transform ·
+fresh-boot DB auto-migration with all 7 tables in WAL · registry spot-checks of 9 pinned
+packages · git history secret scan). The following claims in this report were found
+inaccurate and have been corrected above:
+
+* **§5 Install** — "794 packages, 14.2s; only the 6 expected peer warnings" did not
+  reproduce under any counting method (fresh clone: 292 installed / 293 store entries;
+  in-place check: 451). Peer-range mismatches are real (pinia, vue-router,
+  @vue/test-utils, @vitejs/plugin-vue all exclude `3.6.0-rc.7`), but the exact count is
+  not reproducible from the committed lockfile.
+* **§5 Build** — "7 route chunks" → actually 6 page chunks (+4 shared icon chunks).
+* **§6.1** — the cited `getDevRootFragmentEl` symbol does not exist anywhere in
+  @vue/test-utils 2.5.0. The limitation is real (dist reads `vm.$el` and has no vapor
+  handling), so the VDOM-host workaround stands; the mechanism text was corrected.
+* **§6.2 item 1** — "Vite under Node silently loses its socket" could not be reproduced
+  (with `127.0.0.1` under Node 26.8.1: binds, LISTENING in netstat, serves HTTP 200).
+  The `localhost`/IPv6 half-fail *is* verified and reproducible (binds `[::1]` only).
+  D-D (`bunx --bun vite`) retained as a precaution, not a requirement.
+* **§8** — added the `bun --watch` / `packages/shared` non-watching caveat.
+
+Also fixed outside this report: key-shaped placeholder strings in
+`temp/lorekeeper_settings/code.html` replaced with `EXAMPLE-PLACEHOLDER` values
+(secret-scanner hygiene), `README.md` credit hyperlinked per plan §13, and `SECURITY.md`
+added (required by plan §13, previously absent).
+
+Remaining known-non-issues: master contains an empty commit (`257f25c`, message "t",
+authored post-report) — recommended to drop before any public push.
