@@ -348,7 +348,7 @@ messages = [
 
 * Budget = `min(model.contextLength − maxTokens − overhead, globalDefaults.contextBudgetTokens)`; overhead estimated as `chars/4` of system + PHI + the final user message + a 5 % safety margin. Character-based estimation is deliberately chosen over a tokenizer dependency for v1 (±10 % accuracy is acceptable; the whole prompt is re-trimmed every generation anyway). A `debugPreview` endpoint shows the exact assembled request for tuning.
 * Trimming: walk the active-variant history from newest to oldest, always keep: greeting (seq 0, marked “context anchor”) + the newest contiguous user+assistant block; drop oldest blocks until the estimated total fits. Never split a pair. Trimmed turns are replaced by a one-line notice to the model? — **No** (keeps prompts clean); they are simply omitted.
-* Post-v1 ideas (parked): rolling summary of dropped turns, per-chat pinned “memory” notes, lorebook/character-book support (V2 card `character_book` is currently flattened into `systemExtras` on import — documented on the import dialog).
+* Post-v1 ideas (parked): rolling summary of dropped turns, per-chat pinned “memory” notes, lorebook/character-book support (M2 ships `character_book` **preserved losslessly** inside the character's `extensions` round-trip envelope instead of flattening it into `systemExtras` — an M2 revision of this line, so an export restores the original card byte-for-byte; the import dialog documents this).
 
 ---
 

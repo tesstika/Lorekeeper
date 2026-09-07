@@ -2,6 +2,7 @@ node_modules/
 dist/
 data/
 .vitest/
+.playwright-mcp/
 *.log
 .DS_Store
 .env
