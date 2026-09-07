@@ -13,7 +13,9 @@ export function formatContextLength(contextLength: number | null): string | null
 
 /** Prices are USD per token (OpenRouter metadata); displayed per million tokens. */
 export function formatPricePerMillion(price: number | undefined): string | null {
-  if (price === undefined || !Number.isFinite(price)) return null;
+  // Negative values are provider sentinels for "unknown/variable" pricing
+  // (e.g. openrouter/auto publishes -1) — hide them rather than guess.
+  if (price === undefined || !Number.isFinite(price) || price < 0) return null;
   const perMillion = price * 1_000_000;
   if (perMillion === 0) return 'free';
   if (perMillion < 0.01) return `$${perMillion.toPrecision(2)}/M`;

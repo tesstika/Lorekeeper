@@ -132,7 +132,27 @@ export function getProviderTest(
   return getSettingWith(
     db,
     `providerTest:${providerId}`,
-    (raw) => raw as ProviderTestRecord,
+    (raw) => {
+      // Shape-check instead of a blind cast: a corrupt row must degrade to
+      // null (→ "Key saved — not verified") rather than leak garbage into
+      // GET /api/providers.
+      const candidate = raw as Partial<ProviderTestRecord> | null;
+      if (
+        candidate === null ||
+        typeof candidate !== 'object' ||
+        (candidate.status !== 'connected' && candidate.status !== 'error') ||
+        typeof candidate.testedAt !== 'string'
+      ) {
+        throw new Error('malformed providerTest row');
+      }
+      return {
+        status: candidate.status,
+        latencyMs: typeof candidate.latencyMs === 'number' ? candidate.latencyMs : null,
+        code: typeof candidate.code === 'string' ? candidate.code : null,
+        message: typeof candidate.message === 'string' ? candidate.message : null,
+        testedAt: candidate.testedAt,
+      };
+    },
     () => null,
   );
 }

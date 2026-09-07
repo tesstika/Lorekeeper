@@ -190,13 +190,6 @@ export async function registerProviderRoutes(app: AppInstance): Promise<void> {
         );
       }
 
-      if (!keyStore.hasKey(id)) {
-        throw httpError(
-          400,
-          'no_key',
-          `No API key stored for ${id} — save a key to fetch the model catalog.`,
-        );
-      }
       let apiKey: string;
       try {
         apiKey = keyStore.decrypt(id);

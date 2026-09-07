@@ -45,7 +45,15 @@ export function masterKeyPath(): string {
 export function loadOrCreateMasterKey(filePath: string = masterKeyPath()): Buffer {
   mkdirSync(path.dirname(filePath), { recursive: true });
   if (existsSync(filePath)) {
-    const raw = readFileSync(filePath);
+    let raw: Buffer;
+    try {
+      raw = readFileSync(filePath);
+    } catch (error) {
+      // Distinct from the corrupt-file case: locked/unreadable must not be
+      // mistaken for a wrong-length key (e.g. AV/backup tools holding it).
+      const detail = error instanceof Error ? error.message : String(error);
+      throw new Error(`Master key at ${filePath} could not be read: ${detail}`);
+    }
     if (raw.length === MASTER_KEY_BYTES) return raw;
     throw new Error(
       `Master key at ${filePath} is corrupt (expected ${MASTER_KEY_BYTES} bytes, got ${raw.length}). ` +
