@@ -1,5 +1,6 @@
 import { existsSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
+import fastifyMultipart from '@fastify/multipart';
 import fastifyStatic from '@fastify/static';
 import type { FastifyError } from 'fastify';
 import Fastify from 'fastify';
@@ -12,7 +13,10 @@ import {
 import { createDb } from './db/client';
 import { runMigrations } from './db/migrate';
 import { env } from './env';
+import { registerAttachmentRoutes } from './routes/attachments';
+import { registerCharacterRoutes } from './routes/characters';
 import { registerHealthRoutes } from './routes/health';
+import { registerPersonaRoutes } from './routes/personas';
 import { registerPresetRoutes } from './routes/presets';
 import { registerProviderRoutes } from './routes/providers';
 import { registerSettingsRoutes } from './routes/settings';
@@ -84,14 +88,22 @@ export async function buildApp(options: BuildAppOptions = {}) {
   ensureSeedPresets(db);
   app.decorate('db', db);
   app.decorate('sqlite', sqlite);
+  app.decorate('dataDir', dataDir);
   app.addHook('onClose', () => {
     sqlite.close();
+  });
+
+  await app.register(fastifyMultipart, {
+    limits: { fileSize: 32 * 1024 * 1024, files: 1 },
   });
 
   await registerHealthRoutes(app);
   await registerProviderRoutes(app);
   await registerPresetRoutes(app);
   await registerSettingsRoutes(app);
+  await registerCharacterRoutes(app);
+  await registerPersonaRoutes(app);
+  await registerAttachmentRoutes(app);
 
   let spaEnabled = false;
   if (existsSync(env.frontendDistDir)) {

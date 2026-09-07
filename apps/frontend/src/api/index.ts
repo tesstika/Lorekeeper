@@ -1,4 +1,13 @@
 import type {
+  AttachmentResponse,
+  CardExportFormat,
+  Character,
+  CharacterCreateInput,
+  CharacterPatch,
+  ImportCardResponse,
+  Persona,
+  PersonaCreateInput,
+  PersonaPatch,
   Preset,
   PresetCreateInput,
   PresetPatch,
@@ -76,4 +85,52 @@ export const api = {
   updatePreset: (id: string, patch: PresetPatch) =>
     request<Preset>('PATCH', `/presets/${id}`, patch),
   deletePreset: (id: string) => request<{ ok: true }>('DELETE', `/presets/${id}`),
+
+  getCharacters: () => request<Character[]>('GET', '/characters'),
+  getCharacter: (id: string) => request<Character>('GET', `/characters/${id}`),
+  createCharacter: (input: CharacterCreateInput) =>
+    request<Character>('POST', '/characters', input),
+  updateCharacter: (id: string, patch: CharacterPatch) =>
+    request<Character>('PATCH', `/characters/${id}`, patch),
+  deleteCharacter: (id: string, force = false) =>
+    request<{ ok: true }>('DELETE', `/characters/${id}${force ? '?force=1' : ''}`),
+  importCard: (payload: unknown) =>
+    request<ImportCardResponse>('POST', '/characters/import', payload),
+
+  getPersonas: () => request<Persona[]>('GET', '/personas'),
+  getPersona: (id: string) => request<Persona>('GET', `/personas/${id}`),
+  createPersona: (input: PersonaCreateInput) => request<Persona>('POST', '/personas', input),
+  updatePersona: (id: string, patch: PersonaPatch) =>
+    request<Persona>('PATCH', `/personas/${id}`, patch),
+  deletePersona: (id: string) => request<{ ok: true }>('DELETE', `/personas/${id}`),
+  setDefaultPersona: (id: string) =>
+    request<{ persona: Persona }>('PUT', `/personas/${id}/default`),
+
+  uploadAttachment: (file: File): Promise<AttachmentResponse> => {
+    const form = new FormData();
+    form.append('file', file);
+    return fetch('/api/attachments', { method: 'POST', body: form }).then(async (response) => {
+      const body = (await response.json().catch(() => null)) as
+        | (AttachmentResponse & { code?: string; message?: string })
+        | null;
+      if (!response.ok || !body) {
+        throw new ApiError(
+          body?.message ?? `Upload failed with HTTP ${response.status}`,
+          response.status,
+          body?.code ?? 'http_error',
+        );
+      }
+      return body;
+    });
+  },
+
+  /** Triggers a browser download of the character's exported card JSON. */
+  exportCharacterCard: (id: string, format: CardExportFormat = 'v2'): void => {
+    const anchor = document.createElement('a');
+    anchor.href = `/api/characters/${id}/export${format === 'v3' ? '?format=v3' : ''}`;
+    anchor.rel = 'noopener';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  },
 };

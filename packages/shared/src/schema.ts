@@ -281,3 +281,196 @@ export const presetPatchSchema = z.object({
   isDefault: z.boolean().optional(),
 });
 export type PresetPatch = z.output<typeof presetPatchSchema>;
+
+// ---------------------------------------------------------------------------
+// Characters & personas (plan §3, §6.2, §10 M2)
+// ---------------------------------------------------------------------------
+
+/** Prose fields of a card can be very large; the cap keeps DoS bounded. */
+const longText = z.string().max(200_000);
+const shortText = z.string().max(8_000);
+
+const jsonRecord = z.record(z.string(), z.unknown());
+
+export const characterInputSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(120),
+  tagline: z.string().max(300).nullable().default(null),
+  tags: z.array(z.string().min(1).max(64)).max(32).default([]),
+  avatarPath: z.string().max(500).nullable().default(null),
+  description: longText.default(''),
+  creatorNotes: longText.default(''),
+  extensions: jsonRecord.default({}),
+  personality: longText.default(''),
+  behavior: longText.default(''),
+  communicationStyle: longText.default(''),
+  likes: shortText.default(''),
+  dislikes: shortText.default(''),
+  backstory: longText.default(''),
+  scenario: longText.default(''),
+  exampleDialogue: longText.default(''),
+  firstMessage: longText.default(''),
+  alternateGreetings: z.array(longText).max(20).default([]),
+  systemExtras: longText.default(''),
+  jailbreak: longText.default(''),
+});
+export type CharacterInput = z.output<typeof characterInputSchema>;
+export type CharacterCreateInput = z.input<typeof characterInputSchema>;
+
+export const characterSchema = characterInputSchema.extend({
+  id: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type Character = z.output<typeof characterSchema>;
+
+/**
+ * Defaults-free PATCH (M1 §4.2 lesson): fastify-type-provider-zod v7 validates
+ * request bodies through the z.output direction, which injects every schema
+ * default into missing keys. Every key here is `.optional()` with ZERO
+ * `.default()` so a partial PATCH never clobbers untouched fields.
+ */
+export const characterPatchSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(120).optional(),
+  tagline: z.string().max(300).nullable().optional(),
+  tags: z.array(z.string().min(1).max(64)).max(32).optional(),
+  avatarPath: z.string().max(500).nullable().optional(),
+  description: longText.optional(),
+  creatorNotes: longText.optional(),
+  extensions: jsonRecord.optional(),
+  personality: longText.optional(),
+  behavior: longText.optional(),
+  communicationStyle: longText.optional(),
+  likes: shortText.optional(),
+  dislikes: shortText.optional(),
+  backstory: longText.optional(),
+  scenario: longText.optional(),
+  exampleDialogue: longText.optional(),
+  firstMessage: longText.optional(),
+  alternateGreetings: z.array(longText).max(20).optional(),
+  systemExtras: longText.optional(),
+  jailbreak: longText.optional(),
+});
+export type CharacterPatch = z.output<typeof characterPatchSchema>;
+
+export const personaInputSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(120),
+  description: longText.default(''),
+  avatarPath: z.string().max(500).nullable().default(null),
+  isDefault: z.boolean().default(false),
+});
+export type PersonaInput = z.output<typeof personaInputSchema>;
+export type PersonaCreateInput = z.input<typeof personaInputSchema>;
+
+export const personaSchema = personaInputSchema.extend({
+  id: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type Persona = z.output<typeof personaSchema>;
+
+export const personaPatchSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(120).optional(),
+  description: longText.optional(),
+  avatarPath: z.string().max(500).nullable().optional(),
+  isDefault: z.boolean().optional(),
+});
+export type PersonaPatch = z.output<typeof personaPatchSchema>;
+
+/** `PUT /api/personas/:id/default` → `{ persona }`. */
+export const personaDefaultResponseSchema = z.object({ persona: personaSchema });
+export type PersonaDefaultResponse = z.output<typeof personaDefaultResponseSchema>;
+
+// -- Character card import / export (plan D13, §7.1) --------------------------
+
+export const cardSpecs = ['chara_card_v2', 'chara_card_v3'] as const;
+export type CardSpec = (typeof cardSpecs)[number];
+
+export const cardExportFormats = ['v2', 'v3'] as const;
+export type CardExportFormat = (typeof cardExportFormats)[number];
+
+/**
+ * Legacy flat Tavern V1 card: `{ name, description, personality, scenario,
+ * first_mes, mes_example }` (plus anything else the generator added).
+ */
+export const tavernCardV1Schema = z.looseObject({
+  name: z.string().min(1),
+  description: z.string().optional(),
+  personality: z.string().optional(),
+  scenario: z.string().optional(),
+  first_mes: z.string().optional(),
+  mes_example: z.string().optional(),
+});
+
+/** Loose `data` payload of V2 cards (unknown fields tolerated + preserved). */
+export const cardDataV2Schema = z.looseObject({
+  name: z.string().min(1),
+  description: z.string().optional(),
+  personality: z.string().optional(),
+  scenario: z.string().optional(),
+  first_mes: z.string().optional(),
+  mes_example: z.string().optional(),
+  creator_notes: z.string().optional(),
+  system_prompt: z.string().optional(),
+  post_history_instructions: z.string().optional(),
+  alternate_greetings: z.array(z.string()).optional(),
+  character_book: z.unknown().optional(),
+  tags: z.array(z.string()).optional(),
+  creator: z.string().optional(),
+  character_version: z.string().optional(),
+  extensions: jsonRecord.optional(),
+});
+
+/** V3 card root: `{ spec: 'chara_card_v3', spec_version: '3.0', data }`. */
+export const characterCardV3Schema = z.looseObject({
+  spec: z.literal('chara_card_v3'),
+  spec_version: z.string().optional(),
+  data: cardDataV2Schema,
+});
+
+/** V2 card root: `{ spec: 'chara_card_v2', spec_version: '2.0', data }`. */
+export const characterCardV2Schema = z.looseObject({
+  spec: z.literal('chara_card_v2'),
+  spec_version: z.string().optional(),
+  data: cardDataV2Schema,
+});
+
+export const characterCardUnionSchema = z.union([
+  characterCardV3Schema,
+  characterCardV2Schema,
+  tavernCardV1Schema,
+]);
+
+export const importCardResponseSchema = z.object({
+  character: characterSchema,
+  detectedFormat: z.enum(['v1', 'v2', 'v3']),
+});
+export type ImportCardResponse = z.output<typeof importCardResponseSchema>;
+
+/** V2 export — the universal interchange baseline (plan D13). */
+export const exportedCardV2Schema = z.object({
+  spec: z.literal('chara_card_v2'),
+  spec_version: z.string(),
+  data: jsonRecord,
+});
+export type ExportedCardV2 = z.output<typeof exportedCardV2Schema>;
+
+/** Optional V3 export (`?format=v3`). */
+export const exportedCardV3Schema = z.object({
+  spec: z.literal('chara_card_v3'),
+  spec_version: z.string(),
+  data: jsonRecord,
+});
+export type ExportedCardV3 = z.output<typeof exportedCardV3Schema>;
+
+// -- Attachments (avatar/image uploads, plan §7.1) -----------------------------
+
+export const attachmentResponseSchema = z.object({
+  id: z.string(),
+  url: z.string(),
+  width: z.number().int().nullable(),
+  height: z.number().int().nullable(),
+  mimeType: z.string(),
+  sizeBytes: z.number().int(),
+  originalName: z.string(),
+});
+export type AttachmentResponse = z.output<typeof attachmentResponseSchema>;

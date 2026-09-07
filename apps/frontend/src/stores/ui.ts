@@ -9,6 +9,18 @@ export interface Toast {
   tone: ToastTone;
 }
 
+export interface ConfirmOptions {
+  title: string;
+  message: string;
+  confirmLabel?: string;
+  cancelLabel?: string;
+  danger?: boolean;
+}
+
+interface PendingConfirm extends ConfirmOptions {
+  resolve: (accepted: boolean) => void;
+}
+
 export const useUiStore = defineStore('ui', () => {
   const toasts = ref<Toast[]>([]);
   let nextId = 1;
@@ -23,5 +35,19 @@ export const useUiStore = defineStore('ui', () => {
     toasts.value = toasts.value.filter((toast) => toast.id !== id);
   }
 
-  return { toasts, notify, dismiss };
+  // -- Confirm dialog (D7: every destructive action confirms, no undo toasts) --
+  const pendingConfirm = ref<PendingConfirm | null>(null);
+
+  function confirm(options: ConfirmOptions): Promise<boolean> {
+    return new Promise((resolve) => {
+      pendingConfirm.value = { ...options, resolve };
+    });
+  }
+
+  function settleConfirm(accepted: boolean): void {
+    pendingConfirm.value?.resolve(accepted);
+    pendingConfirm.value = null;
+  }
+
+  return { toasts, notify, dismiss, pendingConfirm, confirm, settleConfirm };
 });
