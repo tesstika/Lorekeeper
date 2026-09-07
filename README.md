@@ -32,3 +32,14 @@ bun run start        # serve built SPA + API on http://127.0.0.1:3000
 ```
 
 The SQLite database and media live in `data/` (created on first boot, never committed).
+
+## Dev notes (Windows)
+
+- The Vite dev server runs under the **Bun runtime** (`bunx --bun vite`): Vite 8's listener can silently
+  fail to hold its socket under Node on some Windows setups. The host is pinned to `127.0.0.1` for the
+  same reason (default `localhost` binding can half-fail on IPv6).
+- Vitest also runs under Bun (`bunx --bun vitest`), with the `threads` pool — the `forks` pool is
+  unstable under Bun. The server's `import.meta.dir`-style Bun-only APIs are avoided in favor of
+  portable `import.meta.url`.
+- Type checking: backend/shared use native TypeScript 7 (`tsc`); the frontend uses `vue-tsc` on
+  `typescript-native-bridge` (the Go checker — the terminal prints `TNB ACTIVE` when it engages).

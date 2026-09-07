@@ -1,0 +1,35 @@
+{
+  "name": "lorekeeper",
+  "description": "Local-first roleplay client for LLMs via OpenRouter & UnoRouter",
+  "author": "Testika",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "bun": ">=1.4.2",
+    "node": ">=26.0.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "bun run --parallel --filter '*' dev",
+    "build": "bun run --filter '@lorekeeper/frontend' build",
+    "start": "bun apps/server/src/index.ts",
+    "test": "bun run --parallel --filter '*' test",
+    "test:watch": "bun run --parallel --filter '*' test:watch",
+    "typecheck": "bun run --parallel --filter '*' typecheck",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "db:generate": "bun run --filter '@lorekeeper/server' db:generate",
+    "db:migrate": "bun apps/server/src/db/migrate.ts"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.12",
+    "@types/node": "26.4.1",
+    "drizzle-kit": "0.31.10",
+    "typescript": "7.0.2",
+    "vitest": "5.0.0"
+  }
+}

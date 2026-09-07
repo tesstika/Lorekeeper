@@ -1,0 +1,13 @@
+{
+  "name": "@lorekeeper/shared",
+  "author": "Testika",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "zod": "4.5.4"
+  }
+}
