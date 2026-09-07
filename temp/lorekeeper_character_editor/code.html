@@ -1,0 +1,430 @@
+<!DOCTYPE html><html class="dark" lang="en" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport">
+<title>Lorekeeper - Edit Character</title>
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-primary-fixed-variant": "#62259b",
+            "surface-container": "#221e26",
+            "surface-dim": "#151219",
+            "on-secondary-fixed": "#1e192a",
+            "surface-bright": "#3c3840",
+            "primary-container": "#c084fc",
+            "on-tertiary-fixed-variant": "#85145a",
+            "primary-fixed": "#f0dbff",
+            "surface-container-lowest": "#100d14",
+            "error": "#ffb4ab",
+            "inverse-on-surface": "#332f37",
+            "on-tertiary-fixed": "#3d0026",
+            "tertiary-fixed-dim": "#ffafd3",
+            "on-secondary-fixed-variant": "#4b4357",
+            "on-primary-container": "#500989",
+            "inverse-primary": "#7b41b4",
+            "tertiary-fixed": "#ffd8e7",
+            "surface-container-low": "#1d1a21",
+            "on-tertiary-container": "#6d0047",
+            "primary": "#ddb8ff",
+            "on-secondary": "#342d40",
+            "secondary-fixed-dim": "#cdc2db",
+            "surface-variant": "#37333b",
+            "on-error-container": "#ffdad6",
+            "surface-tint": "#ddb8ff",
+            "error-container": "#93000a",
+            "on-tertiary": "#620040",
+            "secondary-container": "#4b4357",
+            "tertiary": "#ffafd3",
+            "on-surface": "#e8e0ea",
+            "on-primary": "#490081",
+            "surface-container-high": "#2c2830",
+            "inverse-surface": "#e8e0ea",
+            "surface-container-highest": "#37333b",
+            "tertiary-container": "#f472b6",
+            "on-error": "#690005",
+            "surface": "#151219",
+            "secondary-fixed": "#e9def7",
+            "on-surface-variant": "#cec3d3",
+            "outline": "#978d9d",
+            "on-secondary-container": "#bbb1c9",
+            "secondary": "#cdc2db",
+            "background": "#151219",
+            "outline-variant": "#4c4452",
+            "on-primary-fixed": "#2c0051",
+            "on-background": "#e8e0ea",
+            "primary-fixed-dim": "#ddb8ff"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-2xs": "0.25rem",
+            "space-xs": "0.5rem",
+            "safe-bottom-composer": "4.75rem",
+            "space-2xl": "2rem",
+            "space-xl": "1.5rem",
+            "space-lg": "1.25rem",
+            "space-3xl": "3rem",
+            "gutter-screen": "1.25rem",
+            "space-md": "1rem",
+            "space-sm": "0.75rem"
+          },
+          "fontFamily": {
+            "label-md": ["Plus Jakarta Sans"],
+            "title-md": ["Plus Jakarta Sans"],
+            "headline-sm": ["Plus Jakarta Sans"],
+            "display-md": ["Plus Jakarta Sans"],
+            "caption-sm": ["Plus Jakarta Sans"],
+            "prose-narration": ["\"Source Serif 4\""],
+            "prose-body": ["\"Source Serif 4\""],
+            "prose-dialogue": ["\"Source Serif 4\""],
+            "display-lg": ["Plus Jakarta Sans"]
+          },
+          "fontSize": {
+            "label-md": ["13px", { "lineHeight": "18px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+            "title-md": ["16px", { "lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "600" }],
+            "headline-sm": ["20px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "display-md": ["26px", { "lineHeight": "34px", "letterSpacing": "-0.015em", "fontWeight": "600" }],
+            "caption-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "prose-narration": ["16px", { "lineHeight": "28px", "letterSpacing": "0.01em", "fontWeight": "400" }],
+            "prose-body": ["17px", { "lineHeight": "29px", "letterSpacing": "0.005em", "fontWeight": "400" }],
+            "prose-dialogue": ["18px", { "lineHeight": "30px", "letterSpacing": "0.01em", "fontWeight": "400" }],
+            "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    /* Custom scrollbar for literary inputs */
+    textarea::-webkit-scrollbar {
+      width: 4px;
+    }
+    textarea::-webkit-scrollbar-thumb {
+      background: #4c4452;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface font-label-md antialiased min-h-screen flex justify-center selection:bg-primary/20 selection:text-primary">
+<!-- Mobile Container Wrapper -->
+<main class="w-full max-w-[420px] min-h-screen bg-surface relative flex flex-col pb-36 shadow-2xl overflow-x-hidden">
+<!-- Ambient Firelight Vignette Background Glow -->
+<div class="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[380px] h-[340px] bg-primary/10 rounded-full blur-[90px] -z-10"></div>
+<div class="pointer-events-none absolute top-48 right-[-80px] w-64 h-64 bg-tertiary-container/10 rounded-full blur-[80px] -z-10"></div>
+<!-- Header / Modal Top Bar (Task-Focused: No standard BottomNav, focused cancel/save canvas) -->
+<header class="sticky top-0 z-40 w-full h-14 bg-surface/90 backdrop-blur-md px-gutter-screen flex items-center justify-between">
+<!-- Cancel Text Button -->
+<button class="text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors duration-150 py-2 active:opacity-70" type="button">
+        Cancel
+      </button>
+<!-- Center Title & Mode Switcher Pill -->
+<div class="flex flex-col items-center">
+<h1 class="font-title-md text-title-md text-on-surface font-semibold tracking-tight">Edit Character</h1>
+<span class="font-caption-sm text-caption-sm text-primary flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary inline-block"></span>
+          Manuscript Archive
+        </span>
+</div>
+<!-- Preview / Actions Button -->
+<div class="flex items-center gap-1">
+<button aria-label="Preview Card" class="w-9 h-9 flex items-center justify-center rounded-full text-on-surface-variant hover:text-primary active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-[20px]" data-icon="visibility">visibility</span>
+</button>
+<button aria-label="Export Spec" class="w-9 h-9 flex items-center justify-center rounded-full text-on-surface-variant hover:text-primary active:scale-95 transition-all" type="button">
+<span class="material-symbols-outlined text-[20px]" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+</header>
+<div class="px-gutter-screen pt-space-md flex flex-col gap-space-lg">
+<!-- MODE TOGGLE SEGMENTED CONTROL: Full Lore vs Persona -->
+<div class="bg-surface-container-lowest p-1 rounded-xl flex items-center justify-between">
+<button class="flex-1 py-1.5 px-3 rounded-lg text-label-md font-label-md transition-all duration-200 bg-surface-container-high text-primary shadow-sm flex items-center justify-center gap-1.5 font-medium" id="btnModeCharacter" onclick="setMode('character')" type="button">
+<span class="material-symbols-outlined text-[16px]" data-icon="auto_stories">auto_stories</span>
+<span class="">Character (Full Lore)</span>
+</button>
+<button class="flex-1 py-1.5 px-3 rounded-lg text-label-md font-label-md text-on-surface-variant hover:text-on-surface transition-all duration-200 flex items-center justify-center gap-1.5" id="btnModePersona" onclick="setMode('persona')" type="button">
+<span class="material-symbols-outlined text-[16px]" data-icon="badge">badge</span>
+<span class="">Persona (Player)</span>
+</button>
+</div>
+<!-- AVATAR & IDENTITY HERO SECTION -->
+<section class="flex flex-col items-center text-center pt-space-xs">
+<!-- Circular Avatar Well with Warm Vignette Halo -->
+<div class="relative group cursor-pointer">
+<div class="w-28 h-28 rounded-full p-1 bg-surface-container-high ring-2 ring-primary/40 group-hover:ring-primary transition-all duration-300 shadow-[0_4px_24px_-2px_rgba(192,132,252,0.22)]">
+<div class="w-full h-full rounded-full overflow-hidden relative">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A moody Victorian gothic oil portrait of Lady Vivienne de Valois in dimly candlelit mahogany archive, dressed in high-collar charcoal velvet with an antique violet gemstone brooch, warm atmospheric ember glow and refined dramatic renaissance lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJ5fdx1ynO62E1-nzWnOaNEm_C9IotYtJEBWgZZLexNK-vn9xC4e6VPPNPNCMLcZVZgA1C0lgTxLagWe1Njw0MkQ85Mr9VYjgGSoVQS0xd9vu7TVyFPWO70WQY5Hcb4rgck36x-q0OfGhz_oH0lo8OKW6cTkb1t6ap0AbBXuBLiWJqz1ZfWfwPgdX-JVQX-L0HkqcZb6IyYQ-Al8dUbA7rEbiwIrb1WwjYsLRI5mlKW19PbRSS-vjxJQ">
+<!-- Dim overlay on hover -->
+<div class="absolute inset-0 bg-surface-dim/40 group-hover:bg-surface-dim/20 transition-colors"></div>
+</div>
+</div>
+<!-- Upload overlay badge -->
+<button aria-label="Change portrait" class="absolute -bottom-1 right-0 bg-primary-container text-on-primary-container w-8 h-8 rounded-full flex items-center justify-center shadow-lg active:scale-90 transition-transform" type="button">
+<span class="material-symbols-outlined text-[16px]" data-icon="edit">edit</span>
+</button>
+</div>
+<p class="font-caption-sm text-caption-sm text-on-surface-variant mt-2 tracking-wide uppercase">Tap to change portrait</p>
+<!-- Direct Large Editable Name Field -->
+<div class="mt-space-md w-full relative">
+<div class="flex items-center justify-center gap-1.5">
+<input class="bg-transparent border-0 text-center font-display-md text-display-md text-on-surface font-semibold tracking-tight focus:ring-0 focus:outline-none w-full placeholder:text-outline-variant p-0 hover:text-primary transition-colors cursor-text" placeholder="Character Name" type="text" value="Lady Vivienne de Valois">
+</div>
+<!-- Pencil cue indicator -->
+<div class="flex items-center justify-center gap-1 mt-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[13px] text-primary" data-icon="feather">clock_loader_40</span>
+<input class="bg-transparent border-0 text-center font-label-md text-label-md text-primary font-medium focus:ring-0 focus:outline-none w-full max-w-[280px] placeholder:text-outline-variant p-0" placeholder="Archetype or short subtitle tag" type="text" value="Victorian Occultist &amp; Archival Heiress">
+</div>
+</div>
+<!-- Dynamic Spec Badge Cluster -->
+
+</section>
+<!-- ACCORDION SECTIONS -->
+<div class="flex flex-col gap-space-sm mt-space-xs">
+<!-- 1. PERSONALITY (Active / Expanded by default) -->
+<section class="bg-surface-container rounded-xl overflow-hidden shadow-sm transition-all duration-200">
+<button class="w-full px-space-md py-space-sm flex items-center justify-between text-left hover:bg-surface-container-high/50 transition-colors" onclick="toggleAccordion('acc-personality', 'icon-personality')" type="button">
+<div class="flex items-center gap-2.5">
+<span class="w-7 h-7 rounded-lg bg-surface-container-highest text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]" data-icon="psychology">psychology</span>
+</span>
+<div>
+<h2 class="font-title-md text-title-md text-on-surface font-medium">Personality &amp; Essence</h2>
+<p class="font-caption-sm text-caption-sm text-on-surface-variant">Core demeanor, cognitive quirks &amp; mannerisms</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-primary text-[20px] transition-transform duration-200 rotate-180" data-icon="expand_more" id="icon-personality">expand_more</span>
+</button>
+<div class="px-space-md pb-space-md pt-space-xs flex flex-col gap-space-md" id="acc-personality">
+<!-- Core Personality & Traits -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface-variant flex items-center justify-between">
+<span class="">Core Personality &amp; Traits</span>
+<span class="font-caption-sm text-caption-sm text-outline">Rich Prose</span>
+</label>
+<textarea class="w-full bg-surface-container-lowest text-on-surface font-prose-body text-prose-body p-3 rounded-lg border-0 focus:ring-1 focus:ring-primary placeholder:text-outline-variant resize-none leading-relaxed" placeholder="Describe internal psychology, emotional walls, pride..." rows="3">Sharp-witted, fiercely protective of ancestral secrets, and burdened by a melancholy curiosity. She speaks with an unflinching aristocratic reserve, masking a quiet desperation regarding the family curse.</textarea>
+</div>
+<!-- Behavior & Mannerisms -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface-variant">Behavior &amp; Mannerisms</label>
+<textarea class="w-full bg-surface-container-lowest text-on-surface font-prose-body text-prose-body p-3 rounded-lg border-0 focus:ring-1 focus:ring-primary placeholder:text-outline-variant resize-none leading-relaxed" placeholder="Physical ticks, cadence, non-verbal habits..." rows="2">Paces slowly along bookshelf galleries when deliberating. Fiddles habitually with a hollowed silver signet ring. Refuses direct eye contact when intentionally withholding truths.</textarea>
+</div>
+<!-- Communication Style -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface-variant">Communication Style</label>
+<input class="w-full bg-surface-container-lowest text-on-surface font-prose-narration text-prose-narration px-3 py-2.5 rounded-lg border-0 focus:ring-1 focus:ring-primary placeholder:text-outline-variant" type="text" value="Formal late 19th-century British prose, dry ironic wit, understated metaphors">
+</div>
+<!-- Likes & Dislikes / Dual Fields -->
+<div class="grid grid-cols-2 gap-space-sm">
+<div class="flex flex-col gap-1">
+<label class="font-caption-sm text-caption-sm text-primary flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]" data-icon="thumb_up">thumb_up</span>
+                  Affinities (Likes)
+                </label>
+<input class="w-full bg-surface-container-lowest text-on-surface font-label-md text-label-md px-2.5 py-2 rounded-lg border-0 focus:ring-1 focus:ring-primary placeholder:text-outline-variant" type="text" value="Aged leather folios, Earl Grey, thunderstorm nights">
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-caption-sm text-caption-sm text-tertiary-fixed-dim flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]" data-icon="thumb_down">thumb_down</span>
+                  Aversions (Dislikes)
+                </label>
+<input class="w-full bg-surface-container-lowest text-on-surface font-label-md text-label-md px-2.5 py-2 rounded-lg border-0 focus:ring-1 focus:ring-primary placeholder:text-outline-variant" type="text" value="Damp matches, noisy braggarts, inquisitorial oversight">
+</div>
+</div>
+</div>
+</section>
+<!-- 2. BACKSTORY & SCENARIO -->
+<section class="bg-surface-container rounded-xl overflow-hidden shadow-sm transition-all duration-200">
+<button class="w-full px-space-md py-space-sm flex items-center justify-between text-left hover:bg-surface-container-high/50 transition-colors" onclick="toggleAccordion('acc-backstory', 'icon-backstory')" type="button">
+<div class="flex items-center gap-2.5">
+<span class="w-7 h-7 rounded-lg bg-surface-container-highest text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]" data-icon="menu_book">menu_book</span>
+</span>
+<div>
+<h2 class="font-title-md text-title-md text-on-surface font-medium">Backstory &amp; Scenario</h2>
+<p class="font-caption-sm text-caption-sm text-on-surface-variant">Origins, environmental stakes &amp; setting anchors</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[20px] transition-transform duration-200" data-icon="expand_more" id="icon-backstory">expand_more</span>
+</button>
+<div class="hidden px-space-md pb-space-md pt-space-xs flex flex-col gap-space-md" id="acc-backstory">
+<!-- Historical Context -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface-variant">Character Backstory</label>
+<textarea class="w-full bg-surface-container-lowest text-on-surface font-prose-body text-prose-body p-3 rounded-lg border-0 focus:ring-1 focus:ring-primary placeholder:text-outline-variant resize-none leading-relaxed" placeholder="Chronicle lineage, trauma, motivation..." rows="4">Sole surviving heir to House Valois after the Great Conservatory Collapse of 1888. Inherited the subterranean Blackwood Archives beneath the manor, containing heretical astronomical cartography. She seeks an interpreter who can decipher the cyphers before the Order of the Gilded Rose repossesses the estate.</textarea>
+</div>
+<!-- Current Scenario / Opening Setting -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface-variant">Current Scenario / Opening Setting</label>
+<textarea class="w-full bg-surface-container-lowest text-on-surface font-prose-body text-prose-body p-3 rounded-lg border-0 focus:ring-1 focus:ring-primary placeholder:text-outline-variant resize-none leading-relaxed" placeholder="Where the conversation begins..." rows="2">Midnight at the West Wing study in Valois Manor. Rain lashes against tall stained glass windows. Vivienne sits near a dying fire with a bound ledger.</textarea>
+</div>
+</div>
+</section>
+<!-- 3. DIALOGUE & GREETING -->
+<section class="bg-surface-container rounded-xl overflow-hidden shadow-sm transition-all duration-200">
+<button class="w-full px-space-md py-space-sm flex items-center justify-between text-left hover:bg-surface-container-high/50 transition-colors" onclick="toggleAccordion('acc-dialogue', 'icon-dialogue')" type="button">
+<div class="flex items-center gap-2.5">
+<span class="w-7 h-7 rounded-lg bg-surface-container-highest text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]" data-icon="record_voice_over">record_voice_over</span>
+</span>
+<div>
+<h2 class="font-title-md text-title-md text-on-surface font-medium">Dialogue &amp; Greeting</h2>
+<p class="font-caption-sm text-caption-sm text-on-surface-variant">First impression passage &amp; syntactic cadence</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[20px] transition-transform duration-200" data-icon="expand_more" id="icon-dialogue">expand_more</span>
+</button>
+<div class="hidden px-space-md pb-space-md pt-space-xs flex flex-col gap-space-md" id="acc-dialogue">
+<!-- Opening Greeting / First Message -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface-variant flex items-center justify-between">
+<span class="">Opening Greeting / First Message</span>
+<span class="font-caption-sm text-caption-sm text-primary">Kickoff Turn</span>
+</label>
+<div class="p-3 bg-surface-container-lowest rounded-lg border-l-2 border-primary-container">
+<textarea class="w-full bg-transparent text-on-surface font-prose-dialogue text-prose-dialogue border-0 focus:ring-0 p-0 placeholder:text-outline-variant resize-none leading-relaxed" placeholder="*Actions* in asterisks, spoken words in quotes..." rows="4">*The clock on the mantel strikes three. Without looking up from the charred margin of the vellum folio, she speaks into the silence.*
+
+"You entered through the terrace door. Careless, considering the hounds are only half-sleeping. Tell me—did the rain follow you down, or are you simply fond of shivering?"</textarea>
+</div>
+</div>
+<!-- Example Dialogue / Monologue -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface-variant">Example Dialogue Patterns (One-Shot)</label>
+<textarea class="w-full bg-surface-container-lowest text-on-surface font-prose-body text-prose-body p-3 rounded-lg border-0 focus:ring-1 focus:ring-primary placeholder:text-outline-variant resize-none leading-relaxed" placeholder="Exemplify voice patterns..." rows="3">"I do not seek forgiveness for what is entombed here; I seek comprehension. Do not confuse the two, scholar."</textarea>
+</div>
+</div>
+</section>
+<!-- 4. ADVANCED & SYSTEM ENGINE -->
+<section class="bg-surface-container rounded-xl overflow-hidden shadow-sm transition-all duration-200">
+<button class="w-full px-space-md py-space-sm flex items-center justify-between text-left hover:bg-surface-container-high/50 transition-colors" onclick="toggleAccordion('acc-advanced', 'icon-advanced')" type="button">
+<div class="flex items-center gap-2.5">
+<span class="w-7 h-7 rounded-lg bg-surface-container-highest text-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[18px]" data-icon="tune">tune</span>
+</span>
+<div>
+<h2 class="font-title-md text-title-md text-on-surface font-medium">Advanced &amp; System Directives</h2>
+<p class="font-caption-sm text-caption-sm text-on-surface-variant">LLM constraints, temperature &amp; memory tuning</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[20px] transition-transform duration-200" data-icon="expand_more" id="icon-advanced">expand_more</span>
+</button>
+<div class="hidden px-space-md pb-space-md pt-space-xs flex flex-col gap-space-md" id="acc-advanced">
+<!-- System Instructions -->
+<div class="flex flex-col gap-1.5">
+<label class="font-label-md text-label-md text-on-surface-variant">System Instructions &amp; Jailbreak Anchors</label>
+<textarea class="w-full bg-surface-container-lowest text-on-surface font-mono text-[12px] p-3 rounded-lg border-0 focus:ring-1 focus:ring-primary placeholder:text-outline-variant resize-none leading-relaxed" placeholder="Model steering instructions..." rows="3">Never break character. Never refer to yourself as an artificial intelligence. Emulate authentic 1890s psychological realism with slow burning suspense.</textarea>
+</div>
+<!-- Temperature Slider Control -->
+<div class="flex flex-col gap-2 p-3 bg-surface-container-lowest rounded-lg">
+<div class="flex justify-between items-center">
+<span class="font-label-md text-label-md text-on-surface">Creative Temperature</span>
+<span class="font-label-md text-label-md text-primary font-semibold" id="tempValue">0.85 (Literary Flamboyance)</span>
+</div>
+<input class="w-full h-1.5 bg-surface-container-highest rounded-lg appearance-none cursor-pointer accent-primary" max="1.3" min="0.2" oninput="updateTemp(this.value)" step="0.05" type="range" value="0.85">
+<div class="flex justify-between text-outline font-caption-sm text-caption-sm">
+<span class="">Exact &amp; Grounded (0.2)</span>
+<span class="">Uninhibited (1.3)</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Quick Preset Cards (Persona Quick-Swap Helper) -->
+<div class="p-space-md rounded-xl bg-surface-container-low border border-outline-variant/30 flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface font-semibold flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="bookmark_manager">bookmark_manager</span>
+            Quick Voice Archetype Presets
+          </span>
+<span class="font-caption-sm text-caption-sm text-outline">Tap to apply</span>
+</div>
+<div class="flex gap-2 overflow-x-auto pb-1">
+<button class="whitespace-nowrap px-3 py-1.5 rounded-lg bg-surface-container text-on-surface font-label-md text-label-md hover:bg-surface-container-high transition-colors" type="button">
+            Aristocratic Noir
+          </button>
+<button class="whitespace-nowrap px-3 py-1.5 rounded-lg bg-surface-container text-on-surface font-label-md text-label-md hover:bg-surface-container-high transition-colors" type="button">
+            Weary Inquisitor
+          </button>
+<button class="whitespace-nowrap px-3 py-1.5 rounded-lg bg-surface-container text-on-surface font-label-md text-label-md hover:bg-surface-container-high transition-colors" type="button">
+            Gothic Scholar
+          </button>
+</div>
+</div>
+</div>
+<!-- STICKY BOTTOM ACTION BAR (Modal Destination) -->
+<div class="fixed bottom-0 left-0 right-0 max-w-[420px] mx-auto z-50 bg-surface/90 backdrop-blur-md px-gutter-screen py-3 pb-safe border-t border-outline-variant/30 flex items-center gap-3">
+<!-- Sandbox / Test Draft Button -->
+
+<!-- Primary Save Action Button (Atmospheric Warm Glow) -->
+<button class="flex-[1.4] py-3 px-4 rounded-xl bg-primary-container text-on-primary-container font-label-md text-label-md font-semibold transition-all duration-200 active:scale-95 flex items-center justify-center gap-2 shadow-[0_4px_20px_-2px_rgba(192,132,252,0.35)] hover:shadow-[0_4px_24px_0px_rgba(192,132,252,0.5)]" id="btnSavePrimary" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="history_edu">history_edu</span>
+<span id="saveLabel" class="">Save Character</span>
+</button>
+</div>
+</main>
+<script>
+    // Accordion Toggle Behavior
+    function toggleAccordion(contentId, iconId) {
+      const content = document.getElementById(contentId);
+      const icon = document.getElementById(iconId);
+
+      if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        icon.classList.add('rotate-180');
+        icon.classList.add('text-primary');
+        icon.classList.remove('text-on-surface-variant');
+      } else {
+        content.classList.add('hidden');
+        icon.classList.remove('rotate-180');
+        icon.classList.remove('text-primary');
+        icon.classList.add('text-on-surface-variant');
+      }
+    }
+
+    // Temperature slider display update
+    function updateTemp(val) {
+      const display = document.getElementById('tempValue');
+      let descriptor = "Balanced";
+      if (val < 0.5) descriptor = "Strictly Grounded";
+      else if (val <= 0.9) descriptor = "Literary Flamboyance";
+      else descriptor = "Wild & Uninhibited";
+      display.innerText = `${val} (${descriptor})`;
+    }
+
+    // Mode Switcher between Character & Persona
+    function setMode(mode) {
+      const charBtn = document.getElementById('btnModeCharacter');
+      const personaBtn = document.getElementById('btnModePersona');
+      const saveLabel = document.getElementById('saveLabel');
+
+      if (mode === 'character') {
+        charBtn.className = "flex-1 py-1.5 px-3 rounded-lg text-label-md font-label-md transition-all duration-200 bg-surface-container-high text-primary shadow-sm flex items-center justify-center gap-1.5 font-medium";
+        personaBtn.className = "flex-1 py-1.5 px-3 rounded-lg text-label-md font-label-md text-on-surface-variant hover:text-on-surface transition-all duration-200 flex items-center justify-center gap-1.5";
+        saveLabel.innerText = "Save Character";
+      } else {
+        personaBtn.className = "flex-1 py-1.5 px-3 rounded-lg text-label-md font-label-md transition-all duration-200 bg-surface-container-high text-tertiary-container shadow-sm flex items-center justify-center gap-1.5 font-medium";
+        charBtn.className = "flex-1 py-1.5 px-3 rounded-lg text-label-md font-label-md text-on-surface-variant hover:text-on-surface transition-all duration-200 flex items-center justify-center gap-1.5";
+        saveLabel.innerText = "Save Persona";
+      }
+    }
+  </script>
+
+
+</body></html>

@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Lorekeeper - Characters</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "inverse-primary": "#7b41b4",
+            "inverse-on-surface": "#332f37",
+            "on-error": "#690005",
+            "secondary": "#cdc2db",
+            "on-tertiary-fixed-variant": "#85145a",
+            "surface": "#151219",
+            "surface-container": "#221e26",
+            "surface-container-low": "#1d1a21",
+            "on-secondary-fixed-variant": "#4b4357",
+            "tertiary-container": "#f472b6",
+            "on-error-container": "#ffdad6",
+            "surface-bright": "#3c3840",
+            "surface-variant": "#37333b",
+            "outline-variant": "#4c4452",
+            "on-secondary-container": "#bbb1c9",
+            "primary": "#ddb8ff",
+            "primary-fixed-dim": "#ddb8ff",
+            "on-surface-variant": "#cec3d3",
+            "primary-fixed": "#f0dbff",
+            "surface-tint": "#ddb8ff",
+            "on-tertiary-container": "#6d0047",
+            "surface-container-high": "#2c2830",
+            "on-surface": "#e8e0ea",
+            "outline": "#978d9d",
+            "inverse-surface": "#e8e0ea",
+            "tertiary-fixed-dim": "#ffafd3",
+            "secondary-container": "#4b4357",
+            "on-tertiary": "#620040",
+            "on-background": "#e8e0ea",
+            "on-secondary": "#342d40",
+            "secondary-fixed": "#e9def7",
+            "secondary-fixed-dim": "#cdc2db",
+            "on-tertiary-fixed": "#3d0026",
+            "tertiary-fixed": "#ffd8e7",
+            "surface-container-highest": "#37333b",
+            "tertiary": "#ffafd3",
+            "error-container": "#93000a",
+            "background": "#151219",
+            "surface-container-lowest": "#100d14",
+            "on-secondary-fixed": "#1e192a",
+            "primary-container": "#c084fc",
+            "surface-dim": "#151219",
+            "on-primary-container": "#500989",
+            "error": "#ffb4ab",
+            "on-primary-fixed-variant": "#62259b",
+            "on-primary-fixed": "#2c0051",
+            "on-primary": "#490081"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-sm": "0.75rem",
+            "space-2xs": "0.25rem",
+            "space-xs": "0.5rem",
+            "space-lg": "1.25rem",
+            "gutter-screen": "1.25rem",
+            "space-3xl": "3rem",
+            "safe-bottom-composer": "4.75rem",
+            "space-2xl": "2rem",
+            "space-md": "1rem",
+            "space-xl": "1.5rem"
+          },
+          "fontFamily": {
+            "prose-body": ["\"Source Serif 4\""],
+            "headline-sm": ["Plus Jakarta Sans"],
+            "caption-sm": ["Plus Jakarta Sans"],
+            "display-md": ["Plus Jakarta Sans"],
+            "title-md": ["Plus Jakarta Sans"],
+            "label-md": ["Plus Jakarta Sans"],
+            "display-lg": ["Plus Jakarta Sans"],
+            "prose-dialogue": ["\"Source Serif 4\""],
+            "prose-narration": ["\"Source Serif 4\""]
+          },
+          "fontSize": {
+            "prose-body": ["17px", {"lineHeight": "29px", "letterSpacing": "0.005em", "fontWeight": "400"}],
+            "headline-sm": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+            "caption-sm": ["11px", {"lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "500"}],
+            "display-md": ["26px", {"lineHeight": "34px", "letterSpacing": "-0.015em", "fontWeight": "600"}],
+            "title-md": ["16px", {"lineHeight": "22px", "letterSpacing": "0em", "fontWeight": "600"}],
+            "label-md": ["13px", {"lineHeight": "18px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+            "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "prose-dialogue": ["18px", {"lineHeight": "30px", "letterSpacing": "0.01em", "fontWeight": "400"}],
+            "prose-narration": ["16px", {"lineHeight": "28px", "letterSpacing": "0.01em", "fontWeight": "400"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .amber-glow {
+      box-shadow: 0 8px 24px -4px rgba(217, 119, 6, 0.35);
+    }
+    .character-card-vignette::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(21, 18, 25, 0.05) 0%, rgba(21, 18, 25, 0.3) 50%, rgba(34, 30, 38, 0.95) 100%);
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased min-h-screen pb-28 selection:bg-primary selection:text-on-primary-container">
+<!-- Fixed Top Header (Shared Component: TopAppBar with mobile screen adaptations) -->
+<header class="fixed top-0 left-0 w-full z-40 bg-surface/85 backdrop-blur-md px-gutter-screen h-16 flex items-center justify-between shadow-sm">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[22px]" data-icon="auto_stories">auto_stories</span>
+<h1 class="font-display-md text-display-md font-bold tracking-tight text-on-surface">Characters</h1>
+</div>
+<!-- Actions Right -->
+<div class="flex items-center gap-space-xs">
+<button aria-label="Search Dramatis Personae" class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors duration-200 active:scale-95">
+<span class="material-symbols-outlined text-[20px]" data-icon="search">search</span>
+</button>
+<button aria-label="More options" class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors duration-200 active:scale-95" id="overflowTrigger">
+<span class="material-symbols-outlined text-[22px]" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<!-- Overflow Menu Popover -->
+<div class="hidden absolute right-gutter-screen top-14 w-48 bg-surface-container rounded-xl border border-outline-variant/30 p-1.5 shadow-2xl backdrop-blur-xl z-50" id="overflowMenu">
+<button class="w-full flex items-center gap-2.5 px-3 py-2 text-left text-on-surface hover:bg-surface-container-high rounded-lg text-label-md font-label-md transition-colors">
+<span class="material-symbols-outlined text-[18px] text-primary" data-icon="file_upload">file_upload</span>
+<span>Import Lore Codex</span>
+</button>
+<button class="w-full flex items-center gap-2.5 px-3 py-2 text-left text-on-surface hover:bg-surface-container-high rounded-lg text-label-md font-label-md transition-colors">
+<span class="material-symbols-outlined text-[18px] text-primary" data-icon="file_download">file_download</span>
+<span>Export Personae Archive</span>
+</button>
+<div class="h-px bg-outline-variant/20 my-1"></div>
+<button class="w-full flex items-center gap-2.5 px-3 py-2 text-left text-on-surface hover:bg-surface-container-high rounded-lg text-label-md font-label-md transition-colors">
+<span class="material-symbols-outlined text-[18px] text-secondary" data-icon="sort">sort</span>
+<span>Sort by Chronicles</span>
+</button>
+</div>
+</header>
+<!-- Main Canvas Container -->
+<main class="pt-20 px-gutter-screen max-w-2xl mx-auto flex flex-col gap-space-lg">
+<!-- Segmented Filter Control: Characters vs Personas -->
+<section aria-label="Entity filter" class="flex justify-center">
+<div class="w-full bg-surface-container-lowest p-1 rounded-full border border-outline-variant/30 flex items-center shadow-inner">
+<button class="flex-1 py-2 px-space-md rounded-full bg-surface-container-high text-primary font-title-md text-label-md flex items-center justify-center gap-1.5 shadow-sm transition-all duration-200">
+<span class="w-1.5 h-1.5 rounded-full bg-primary inline-block"></span>
+<span>Characters</span>
+<span class="text-caption-sm font-caption-sm text-secondary bg-surface-container px-1.5 py-0.5 rounded-full ml-1">6</span>
+</button>
+<button class="flex-1 py-2 px-space-md rounded-full text-secondary hover:text-on-surface font-title-md text-label-md flex items-center justify-center gap-1.5 transition-all duration-200">
+<span>Personas</span>
+<span class="text-caption-sm font-caption-sm text-secondary bg-surface-container-low px-1.5 py-0.5 rounded-full ml-1">3</span>
+</button>
+</div>
+</section>
+<!-- Codex Banner Subheader -->
+<section class="flex items-center justify-between text-caption-sm font-caption-sm text-secondary px-1">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-primary" data-icon="auto_awesome">auto_awesome</span>
+<span>Dramatis Personae &amp; Archival Companions</span>
+</span>
+<span class="text-secondary/70">6 bound souls</span>
+</section>
+<!-- 2-Column Asymmetric Literary Grid -->
+<div class="grid grid-cols-2 gap-3.5 sm:gap-4">
+<!-- Card 1: Lady Vivienne de Valois (Standard State) -->
+<article class="group bg-surface-container rounded-2xl overflow-hidden border border-outline-variant/30 flex flex-col hover:border-primary/50 transition-all duration-300 shadow-md">
+<div class="relative w-full aspect-[4/3] overflow-hidden character-card-vignette bg-surface-container-low">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Dark Victorian gothic oil portrait of Lady Vivienne de Valois, wearing an ornate black silk bodice and emerald pendant necklace, bathed in low amber gaslamp lighting inside a velvet-lined parlor with soft dramatic chiaroscuro and atmospheric paper grain." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCXKd5F_zLIXiZSCQvr_8zXZvLJ7fPnnReZUWfTEIlkLUTxlu6i2wQL3lVKWT1v1_r1AKiQHHcSNdR8G6N7moMlcimynrjaiUgvG3gZudMcF_1_waN-uFVj8TeoF6If1ldC34RW8FN8fAs664LAe0gPEAf2s1ApSNOqmMgY0nk9kDySuANiglnSFMNuP1_mBInLJEj3VcuaJaFfJwqgV_rUjyJGgr6e5FfJng7DwzDGa9MnQ1-dQNS8kw"/>
+<div class="absolute top-2.5 left-2.5 z-10">
+<span class="px-2 py-0.5 rounded-md bg-surface-container-lowest/80 backdrop-blur-md text-caption-sm font-caption-sm text-primary border border-outline-variant/20">Noir</span>
+</div>
+</div>
+<div class="p-3 sm:p-3.5 flex flex-col flex-1 justify-between bg-surface-container">
+<div>
+<h2 class="font-headline-sm text-title-md text-on-surface line-clamp-1 group-hover:text-primary transition-colors">Lady Vivienne de Valois</h2>
+<p class="font-caption-sm text-caption-sm text-secondary mt-1 flex items-center gap-1">
+<span>Victorian Noir</span>
+<span class="text-outline">•</span>
+<span>12 tales</span>
+</p>
+</div>
+<div class="mt-3 pt-2.5 border-t border-outline-variant/20 flex items-center justify-between text-secondary/80 group-hover:text-primary transition-colors">
+<span class="font-caption-sm text-caption-sm italic">Tap to begin tale</span>
+<span class="material-symbols-outlined text-[16px]" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+</article>
+<!-- Card 2: Archivist of Oakhaven (Standard State) -->
+<article class="group bg-surface-container rounded-2xl overflow-hidden border border-outline-variant/30 flex flex-col hover:border-primary/50 transition-all duration-300 shadow-md">
+<div class="relative w-full aspect-[4/3] overflow-hidden character-card-vignette bg-surface-container-low">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A dignified elven scholar with spectacles and silver-threaded monastic robes examining ancient illuminated grimoires in a dim grand library, soft amber candlelight illuminating floating dust motes with painterly rich textures and deep warm shadows." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvL3Xc-ffC1TQRozDkIpnA8r7Ir8SABHTgcXgvENRQVStS3sv6UsMsHEpln5cgHkyyEAClhbpgwamcu2aRm8ob0mNzsfY1wVSo8g_KRQof94C_eF98DoRTnYSloK5-VZwThBMEx6HC2Fi0y9gPAlYEC95cprUd2gkJkPXDnxGpJNOuWOMEG07A7452IDdulBtxARP2y_tMsFZqfB02IajNEMQWrdjKK3s8gTLMSyNYYNhQNxAQLcBfXw"/>
+<div class="absolute top-2.5 left-2.5 z-10">
+<span class="px-2 py-0.5 rounded-md bg-surface-container-lowest/80 backdrop-blur-md text-caption-sm font-caption-sm text-primary border border-outline-variant/20">Fantasy</span>
+</div>
+</div>
+<div class="p-3 sm:p-3.5 flex flex-col flex-1 justify-between bg-surface-container">
+<div>
+<h2 class="font-headline-sm text-title-md text-on-surface line-clamp-1 group-hover:text-primary transition-colors">Archivist of Oakhaven</h2>
+<p class="font-caption-sm text-caption-sm text-secondary mt-1 flex items-center gap-1">
+<span>High Fantasy</span>
+<span class="text-outline">•</span>
+<span>8 tales</span>
+</p>
+</div>
+<div class="mt-3 pt-2.5 border-t border-outline-variant/20 flex items-center justify-between text-secondary/80 group-hover:text-primary transition-colors">
+<span class="font-caption-sm text-caption-sm italic">Tap to begin tale</span>
+<span class="material-symbols-outlined text-[16px]" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+</article>
+<!-- Card 3: Captain Ronald Vance (Long-Pressed / Contextual Action State) -->
+<article class="relative bg-surface-container-high rounded-2xl overflow-hidden border-2 border-primary ring-2 ring-primary/20 flex flex-col shadow-xl scale-[1.01] transition-transform">
+<div class="relative w-full aspect-[4/3] overflow-hidden character-card-vignette bg-surface-container-low">
+<img class="w-full h-full object-cover filter brightness-75" data-alt="Steampunk airship naval captain in a heavy brass-buttoned trench coat holding an archaic brass spyglass on an iron deck against cloudy stormy dusk skies, rim lit by warm lantern glows and atmospheric copper aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkIHKJdgblk0csrhHBtei7I2O1YQTy3Smsa_SSGTDlqXeTluk2sz7Z6IVUENzMOZMcCi-hfU5ePFy9EJYVClzYo4DJFwCnGLn9FelQdRcnXVU3gAKrG9QO7-nbbFyTHHLUon8wH1tHDxe9YCmYBFqSpZcUMmvywacdEa75IdLvymKagN7JuWDS2Xss7C5lXrBuBSjxGzuQmDZHrj75gue-k0crlsFKzHT9wLl_TdrMnB8iV1wy9vYUDg"/>
+<!-- Context Action Overlay -->
+<div class="absolute inset-0 bg-surface-container-lowest/70 backdrop-blur-sm z-20 flex flex-col items-center justify-center gap-2 p-2">
+<span class="text-caption-sm font-caption-sm text-on-surface-variant font-medium">Selected Companion</span>
+<div class="flex items-center gap-2">
+<button aria-label="Edit Character" class="w-9 h-9 rounded-full bg-surface-container-high text-on-surface hover:text-primary border border-outline-variant/40 flex items-center justify-center shadow-lg active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[18px]" data-icon="edit">edit</span>
+</button>
+<button aria-label="Delete Character" class="w-9 h-9 rounded-full bg-error-container text-on-error hover:bg-error border border-error/30 flex items-center justify-center shadow-lg active:scale-95 transition-all">
+<span class="material-symbols-outlined text-[18px]" data-icon="delete">delete</span>
+</button>
+</div>
+<span class="text-[10px] text-secondary/60 mt-1">Tap backdrop to dismiss</span>
+</div>
+</div>
+<div class="p-3 sm:p-3.5 flex flex-col flex-1 justify-between bg-surface-container-high">
+<div>
+<h2 class="font-headline-sm text-title-md text-primary line-clamp-1">Captain Ronald Vance</h2>
+<p class="font-caption-sm text-caption-sm text-secondary mt-1 flex items-center gap-1">
+<span>Aether Expedition</span>
+<span class="text-outline">•</span>
+<span>4 tales</span>
+</p>
+</div>
+<div class="mt-3 pt-2.5 border-t border-outline-variant/30 flex items-center justify-between text-primary font-medium">
+<span class="font-caption-sm text-caption-sm">Active selection</span>
+<span class="material-symbols-outlined text-[16px]" data-icon="check_circle" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+</div>
+</article>
+<!-- Card 4: Dr. Alistair Thorne (Standard State) -->
+<article class="group bg-surface-container rounded-2xl overflow-hidden border border-outline-variant/30 flex flex-col hover:border-primary/50 transition-all duration-300 shadow-md">
+<div class="relative w-full aspect-[4/3] overflow-hidden character-card-vignette bg-surface-container-low">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Occult investigator and physician in a dark 1920s candlelit study surrounded by leather-bound journals and strange glowing astronomical talismans, dramatic shadows, moody chiaroscuro lighting, and warm sepia undertones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZ1QZuRQLcJXsQ-4xqLsktq_VHAoT0UVEdjdNQB_S8VNhtgGIFWqAhaQXqJ9mq2PHApahRNxjJQF7h6TCjorURJrnm05aMa1OF7eMLSzsvdu4d-7YapA4kUGEUw8WRZWDn5h9Q_hKAEJXb4f3GZWYMU0orMjJFCOR1Z8ocislOOLWnimR9VpXyNdiFlzi8X97OEblXbZrXj7l5CdJWUZCnH40IGap4WOoSEisPddro1y0t2FlHJn58aA"/>
+<div class="absolute top-2.5 left-2.5 z-10">
+<span class="px-2 py-0.5 rounded-md bg-surface-container-lowest/80 backdrop-blur-md text-caption-sm font-caption-sm text-primary border border-outline-variant/20">Mystery</span>
+</div>
+</div>
+<div class="p-3 sm:p-3.5 flex flex-col flex-1 justify-between bg-surface-container">
+<div>
+<h2 class="font-headline-sm text-title-md text-on-surface line-clamp-1 group-hover:text-primary transition-colors">Dr. Alistair Thorne</h2>
+<p class="font-caption-sm text-caption-sm text-secondary mt-1 flex items-center gap-1">
+<span>Cosmic Mystery</span>
+<span class="text-outline">•</span>
+<span>15 tales</span>
+</p>
+</div>
+<div class="mt-3 pt-2.5 border-t border-outline-variant/20 flex items-center justify-between text-secondary/80 group-hover:text-primary transition-colors">
+<span class="font-caption-sm text-caption-sm italic">Tap to begin tale</span>
+<span class="material-symbols-outlined text-[16px]" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+</article>
+<!-- Card 5: Kaelen Wyrmwarden (Standard State) -->
+<article class="group bg-surface-container rounded-2xl overflow-hidden border border-outline-variant/30 flex flex-col hover:border-primary/50 transition-all duration-300 shadow-md">
+<div class="relative w-full aspect-[4/3] overflow-hidden character-card-vignette bg-surface-container-low">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Rugged dragon tamer warrior in dragon scale leather armor standing before glowing embers and distant mountain crags, warm amber fire reflections upon cheekbones with gritty medieval fantasy digital painting style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMK674D_pDm5Hgi4EWi7wjyHBj7XnyMojOG9qrqGCEKwQPEb7J0bcUF7vhPCsIdKNwPZ33cCu5bh1M2UXHpOqSPNIHvlgkKWy9PCOq9pjTpK2L5QOgkVfmgnT7pP0nD_xmQajUCwax_fE_j-vB01ygYfLZuw3r16YxI57jhxOfCd6zaQ2dkZRtO1W6yugohyLa1tey9YGo0TFBHpnnBOVh5j8RIBhIbQigXsxOyE_lN_-CtsowSBWmEw"/>
+<div class="absolute top-2.5 left-2.5 z-10">
+<span class="px-2 py-0.5 rounded-md bg-surface-container-lowest/80 backdrop-blur-md text-caption-sm font-caption-sm text-primary border border-outline-variant/20">Epic</span>
+</div>
+</div>
+<div class="p-3 sm:p-3.5 flex flex-col flex-1 justify-between bg-surface-container">
+<div>
+<h2 class="font-headline-sm text-title-md text-on-surface line-clamp-1 group-hover:text-primary transition-colors">Kaelen Wyrmwarden</h2>
+<p class="font-caption-sm text-caption-sm text-secondary mt-1 flex items-center gap-1">
+<span>Draconic Myth</span>
+<span class="text-outline">•</span>
+<span>7 tales</span>
+</p>
+</div>
+<div class="mt-3 pt-2.5 border-t border-outline-variant/20 flex items-center justify-between text-secondary/80 group-hover:text-primary transition-colors">
+<span class="font-caption-sm text-caption-sm italic">Tap to begin tale</span>
+<span class="material-symbols-outlined text-[16px]" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+</article>
+<!-- Card 6: Seraphina Frost (Standard State) -->
+<article class="group bg-surface-container rounded-2xl overflow-hidden border border-outline-variant/30 flex flex-col hover:border-primary/50 transition-all duration-300 shadow-md">
+<div class="relative w-full aspect-[4/3] overflow-hidden character-card-vignette bg-surface-container-low">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Ethereal sorceress with crystalline crown and shimmering velvet furs, gazing calmly into twilight blizzard with subtle warm firelight reflecting on frost particles, soft cinematic depth of field." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCbtOP9LqlddJBLwKqukX9NruwmiiOdNhEtKV-V0CxwbSBI65LAD_mm-VLcItHnUuC6qcCrh6aBtniFlVlgVBUU46fzQC9vftg53FVoGZwqYYrG5P1hricYHyYBB_LJWBG_1pNhTzkO7k3haP_blztDbbAZ8ivIaNi6mnXcDfJhisgG6NpZ-FMGj7ipTGQHKtvurTi5LdF4IqLpsOpPGse2tc7S3kQjspOjQwAswQQTVLdinVz_lmVupA"/>
+<div class="absolute top-2.5 left-2.5 z-10">
+<span class="px-2 py-0.5 rounded-md bg-surface-container-lowest/80 backdrop-blur-md text-caption-sm font-caption-sm text-primary border border-outline-variant/20">Fable</span>
+</div>
+</div>
+<div class="p-3 sm:p-3.5 flex flex-col flex-1 justify-between bg-surface-container">
+<div>
+<h2 class="font-headline-sm text-title-md text-on-surface line-clamp-1 group-hover:text-primary transition-colors">Seraphina Frost</h2>
+<p class="font-caption-sm text-caption-sm text-secondary mt-1 flex items-center gap-1">
+<span>Northern Tale</span>
+<span class="text-outline">•</span>
+<span>19 tales</span>
+</p>
+</div>
+<div class="mt-3 pt-2.5 border-t border-outline-variant/20 flex items-center justify-between text-secondary/80 group-hover:text-primary transition-colors">
+<span class="font-caption-sm text-caption-sm italic">Tap to begin tale</span>
+<span class="material-symbols-outlined text-[16px]" data-icon="chevron_right">chevron_right</span>
+</div>
+</div>
+</article>
+</div>
+<!-- Archival Tip Footer Card -->
+<div class="rounded-xl bg-surface-container-low border border-outline-variant/20 p-space-md flex items-start gap-space-sm mt-2">
+<span class="material-symbols-outlined text-primary text-[20px] mt-0.5" data-icon="lightbulb">lightbulb</span>
+<div class="flex-1">
+<h3 class="font-title-md text-label-md text-on-surface font-semibold">Chronicler's Quill</h3>
+<p class="font-prose-narration text-caption-sm text-secondary mt-0.5">
+          Press and hold any companion card to reveal archival bindings, edit personality descriptors, or archive memories.
+        </p>
+</div>
+</div>
+</main>
+<!-- Contextual Primary Floating Action Button (FAB) -->
+<aside class="fixed right-5 bottom-20 z-40">
+<button aria-label="Forge New Companion or Persona" class="w-14 h-14 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center amber-glow hover:opacity-95 active:scale-95 transition-all duration-200">
+<span class="material-symbols-outlined text-[28px] font-semibold" data-icon="add">add</span>
+</button>
+</aside>
+<!-- Global Bottom Navigation (Shared Component: BottomNavBar, locked with active Characters state) -->
+<nav aria-label="Main Navigation" class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter-screen py-space-xs pb-safe bg-surface/90 backdrop-blur-md">
+<!-- Tab 1: Chats (Inactive) -->
+<a class="flex flex-col items-center justify-center text-secondary py-1 gap-1 hover:text-primary transition-colors duration-200 active:scale-95" href="#chats">
+<span class="material-symbols-outlined text-[24px]" data-icon="history_edu">history_edu</span>
+<span class="text-caption-sm font-caption-sm">Chats</span>
+</a>
+<!-- Tab 2: Characters (Active Match) -->
+<a aria-current="page" class="flex flex-col items-center justify-center text-tertiary-fixed-dim py-1 gap-1 relative after:content-[''] after:w-1 after:h-1 after:bg-primary after:rounded-full after:mt-0.5 active:scale-95 transition-transform duration-150" href="#characters">
+<span class="material-symbols-outlined text-[24px] text-primary" data-icon="group" style="font-variation-settings: 'FILL' 1;">group</span>
+<span class="text-caption-sm font-caption-sm font-semibold text-primary">Characters</span>
+</a>
+<!-- Tab 3: Settings (Inactive) -->
+<a class="flex flex-col items-center justify-center text-secondary py-1 gap-1 hover:text-primary transition-colors duration-200 active:scale-95" href="#settings">
+<span class="material-symbols-outlined text-[24px]" data-icon="tune">tune</span>
+<span class="text-caption-sm font-caption-sm">Settings</span>
+</a>
+</nav>
+<script>
+    // Lightweight toggle for the overflow menu
+    const trigger = document.getElementById('overflowTrigger');
+    const menu = document.getElementById('overflowMenu');
+
+    if (trigger && menu) {
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        menu.classList.toggle('hidden');
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!menu.contains(e.target) && e.target !== trigger) {
+          menu.classList.add('hidden');
+        }
+      });
+    }
+  </script>
+</body></html>

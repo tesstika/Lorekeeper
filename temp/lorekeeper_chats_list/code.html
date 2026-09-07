@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Lorekeeper — Chronicles</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS with custom theme -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {"on-tertiary-container": "#841258", "on-primary-fixed-variant": "#62259b", tertiary: "#ffbcd9", "on-secondary-container": "#bbb1c9", "outline-variant": "#504535", "on-surface-variant": "#d4c4af", "surface-container-high": "#2c2830", "on-secondary": "#342d40", secondary: "#cdc2db", "on-tertiary-fixed-variant": "#85145a", "primary-container": "#d09fff", outline: "#9d8f7c", "on-background": "#e8e0ea", "on-error-container": "#ffdad6", "inverse-primary": "#7b41b4", "tertiary-container": "#ff90c7", "surface-variant": "#37333b", "on-tertiary-fixed": "#3d0026", "on-primary-fixed": "#2c0051", "surface-container-lowest": "#100d14", "surface-container-low": "#1d1a21", "tertiary-fixed": "#ffd8e7", "inverse-on-surface": "#332f37", "primary-fixed": "#f0dbff", "on-primary": "#490081", "surface-container-highest": "#37333b", surface: "#151219", "primary-fixed-dim": "#ddb8ff", "secondary-fixed-dim": "#cdc2db", "on-error": "#690005", "on-secondary-fixed": "#1e192a", "secondary-container": "#4b4357", "on-tertiary": "#620040", background: "#151219", "surface-tint": "#ddb8ff", "secondary-fixed": "#e9def7", "on-primary-container": "#602399", "on-secondary-fixed-variant": "#4b4357", "inverse-surface": "#e8e0ea", "surface-container": "#221e26", error: "#ffb4ab", "surface-bright": "#3c3840", primary: "#e3c3ff", "error-container": "#93000a", "on-surface": "#e8e0ea", "surface-dim": "#151219", "tertiary-fixed-dim": "#ffafd3"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}, spacing: {"space-2xl": "2rem", "space-3xl": "3rem", "gutter-screen": "1.25rem", "space-md": "1rem", "space-xl": "1.5rem", "space-xs": "0.5rem", "space-sm": "0.75rem", "space-lg": "1.25rem", "space-2xs": "0.25rem", "safe-bottom-composer": "4.75rem"}, fontFamily: {"prose-body": ["\"Source Serif 4\""], "display-md": ["Plus Jakarta Sans"], "caption-sm": ["Plus Jakarta Sans"], "label-md": ["Plus Jakarta Sans"], "prose-dialogue": ["\"Source Serif 4\""], "display-lg": ["Plus Jakarta Sans"], "title-md": ["Plus Jakarta Sans"], "prose-narration": ["\"Source Serif 4\""], "headline-sm": ["Plus Jakarta Sans"], headline: ["Plus Jakarta Sans"], display: ["Plus Jakarta Sans"], body: ["\"Source Serif 4\""], label: ["Plus Jakarta Sans"]}, fontSize: {"prose-body": ["17px", {lineHeight: "29px", letterSpacing: "0.005em", fontWeight: "400"}], "display-md": ["26px", {lineHeight: "34px", letterSpacing: "-0.015em", fontWeight: "600"}], "caption-sm": ["11px", {lineHeight: "14px", letterSpacing: "0.04em", fontWeight: "500"}], "label-md": ["13px", {lineHeight: "18px", letterSpacing: "0.02em", fontWeight: "500"}], "prose-dialogue": ["18px", {lineHeight: "30px", letterSpacing: "0.01em", fontWeight: "400"}], "display-lg": ["32px", {lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700"}], "title-md": ["16px", {lineHeight: "22px", letterSpacing: "0em", fontWeight: "600"}], "prose-narration": ["16px", {lineHeight: "28px", letterSpacing: "0.01em", fontWeight: "400"}], "headline-sm": ["20px", {lineHeight: "28px", letterSpacing: "-0.01em", fontWeight: "600"}]}, boxShadow: {atmospheric: "0 4px 20px -2px rgba(229, 169, 59, 0.28)"}}}};</script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface min-h-screen flex justify-center items-start antialiased selection:bg-primary/20 selection:text-primary">
+<!-- Mobile Viewport Frame (390px Native Standard) -->
+<main class="w-full max-w-[390px] min-h-screen relative bg-surface border-x border-outline-variant/20 flex flex-col pb-28 shadow-2xl">
+<!-- Native iOS Top Status Bar Indicator -->
+<header class="w-full pt-3 px-6 flex justify-between items-center z-50 text-secondary select-none font-caption-sm text-caption-sm">
+<span class="font-semibold text-on-surface tracking-tight text-[14px]">9:41</span>
+<div class="flex items-center space-x-1.5 text-on-surface">
+<span class="material-symbols-outlined text-[15px]" data-icon="signal_cellular_alt">signal_cellular_alt</span>
+<span class="material-symbols-outlined text-[15px]" data-icon="wifi">wifi</span>
+<span class="material-symbols-outlined text-[18px]" data-icon="battery_full">battery_full</span>
+</div>
+</header>
+<!-- TopAppBar (from Shared Components JSON: Lorekeeper small_center_aligned) -->
+<div class="sticky top-0 z-40 w-full bg-surface/85 backdrop-blur-md px-gutter-screen h-14 flex justify-between items-center transition-colors duration-200">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined text-primary text-[22px]" data-icon="auto_stories">auto_stories</span>
+<h1 class="font-display-md text-headline-sm tracking-tight text-primary font-semibold">Lorekeeper</h1>
+</div>
+<button aria-label="Search tales" class="w-9 h-9 rounded-full flex items-center justify-center text-on-surface-variant hover:text-primary active:opacity-75 transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]" data-icon="search">search</span>
+</button>
+</div>
+<!-- Filter Pill Bar / Story State Segmentation -->
+<nav aria-label="Chronicle filter" class="px-gutter-screen py-space-xs flex items-center gap-2 overflow-x-auto no-scrollbar border-b border-outline-variant/15">
+<button class="px-3.5 py-1.5 rounded-full bg-secondary-container text-primary font-label-md text-label-md font-medium border border-primary/30 flex items-center gap-1.5 shadow-sm transition-transform active:scale-95">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+<span>All Chronicles</span>
+</button>
+<button class="px-3.5 py-1.5 rounded-full bg-surface-container-low text-secondary hover:text-primary font-label-md text-label-md border border-outline-variant/30 transition-colors">
+<span>In Progress</span>
+</button>
+<button class="px-3.5 py-1.5 rounded-full bg-surface-container-low text-secondary hover:text-primary font-label-md text-label-md border border-outline-variant/30 transition-colors">
+<span>Archived</span>
+</button>
+</nav>
+<!-- Pinned Context Callout / Current Literary Atmosphere -->
+<div class="px-gutter-screen pt-space-md pb-space-xs">
+<div class="p-space-sm rounded-xl bg-surface-container-low border border-outline-variant/30 flex items-center justify-between">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-tertiary-fixed-dim text-[18px]" data-icon="bookmark">bookmark</span>
+<p class="font-caption-sm text-caption-sm text-secondary tracking-wide uppercase">Active Sanctum • 5 Chronicles</p>
+</div>
+<span class="font-caption-sm text-caption-sm text-outline">Sorted by Recency</span>
+</div>
+</div>
+<!-- Scrollable Ongoing Role-Play Chronicles List -->
+<section aria-label="Active Chronicles" class="flex-1 px-gutter-screen pt-space-xs space-y-space-sm">
+<!-- Item 1: Lady Vivienne de Valois -->
+<article class="group relative p-3 rounded-xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/20 hover:border-outline-variant/40 transition-all duration-200 cursor-pointer">
+<div class="flex items-start gap-3">
+<!-- Avatar with warm amber ring & status dot -->
+<div class="relative flex-shrink-0">
+<div class="w-13 h-13 w-[52px] h-[52px] rounded-full p-[2px] bg-gradient-to-tr from-primary-container via-outline-variant to-tertiary">
+<img class="w-full h-full rounded-full object-cover bg-surface-container-high" data-alt="A moody, high-fidelity digital painted portrait of Lady Vivienne de Valois in 19th-century Victorian gothic attire, framed by antique lace, candlelit amber tones, deep chiaroscuro shadows, and rich charcoal textures reflecting an atmospheric literary romance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFPKf_zv8JVZfm-liQ4EhQHRFFlVH24g3XR21i4MRKtVUqfeGYabcTsArKy2Ft-G9oGg80NSJ2ZBIA516Z6D831mPKR7RFOfjzC6ATtIii3n8dcWUOJKhN66LNCMOs79snzpC3orjR2ADwWaf8fDxUQzbmazhJ5wJbpe61Q86fPNIPgySX0bRSXZFT2KAj-AbmQPtkAaPM-4oKKJ73JKZQsLxjQApfxUvMReAFrezyle3jEIuSs_zurg"/>
+</div>
+<span class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-primary-container border-2 border-surface shadow-atmospheric"></span>
+</div>
+<!-- Content Details -->
+<div class="flex-1 min-w-0">
+<div class="flex items-baseline justify-between gap-1 mb-1">
+<h2 class="font-title-md text-title-md font-semibold text-on-surface truncate group-hover:text-primary transition-colors">
+                Lady Vivienne de Valois
+              </h2>
+<time class="font-caption-sm text-caption-sm text-outline flex-shrink-0">12m ago</time>
+</div>
+<!-- Model Badge Tag -->
+<div class="flex items-center gap-2 mb-1.5">
+<span class="px-2 py-0.5 rounded bg-surface-container-high border border-outline-variant/30 text-on-surface-variant font-caption-sm text-[10px] tracking-wide">
+                Claude 3.5 Sonnet
+              </span>
+<span class="text-caption-sm text-outline/60 text-[10px]">• Victorian Noir</span>
+</div>
+<!-- Latest Prose Snippet with Italic Dialogue cues -->
+<p class="font-prose-narration text-label-md text-secondary line-clamp-1 italic tracking-normal">
+              “If you break that seal, detective, there is no closing it again,” she murmured softly against the rain...
+            </p>
+</div>
+</div>
+</article>
+<!-- Item 2: The Archivist of Oakhaven -->
+<article class="group relative p-3 rounded-xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/20 hover:border-outline-variant/40 transition-all duration-200 cursor-pointer">
+<div class="flex items-start gap-3">
+<div class="relative flex-shrink-0">
+<div class="w-[52px] h-[52px] rounded-full p-[2px] bg-gradient-to-tr from-primary-container/80 via-outline-variant/50 to-primary/60">
+<img class="w-full h-full rounded-full object-cover bg-surface-container-high" data-alt="A high-fidelity editorial illustration of an ancient cloaked scholar known as The Archivist of Oakhaven, surrounded by towering parchment tomes, soft golden dust motes, and warm amber candlelight within a timeless cathedral scriptorium." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBGUThg4U72Pf1GrsfJnLZYa2VfJfqJDoVAsgPVI3Gs1h7-ulMoikv-euLLr67Y9hgR76iTSM6N9xc9MLkxChMKZ3W94l--HEdVhAAfgQD6YzKhDJfj3cIDPTJ9Glte-yximNSmsQpfA4SUeEQhd814GB-W-0g6j8HHB7ivkjthbgrMP-57p_sexQ9XavqPy1cvjKRGFyeGRaFn2NCAqg3tTap4XsjNFamTocslyjq-U82bXQzu53eRuw"/>
+</div>
+<span class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-primary-container border-2 border-surface"></span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-baseline justify-between gap-1 mb-1">
+<h2 class="font-title-md text-title-md font-semibold text-on-surface truncate group-hover:text-primary transition-colors">
+                The Archivist of Oakhaven
+              </h2>
+<time class="font-caption-sm text-caption-sm text-outline flex-shrink-0">1h ago</time>
+</div>
+<div class="flex items-center gap-2 mb-1.5">
+<span class="px-2 py-0.5 rounded bg-surface-container-high border border-outline-variant/30 text-on-surface-variant font-caption-sm text-[10px] tracking-wide">
+                Gemini 1.5 Pro
+              </span>
+<span class="text-caption-sm text-outline/60 text-[10px]">• High Fantasy</span>
+</div>
+<p class="font-prose-narration text-label-md text-secondary line-clamp-1 italic tracking-normal">
+              The leather tome groans open, revealing diagrams inked in luminous star-iron. “Touch only the margins.”
+            </p>
+</div>
+</div>
+</article>
+<!-- Item 3: Captain Ronald Vance -->
+<article class="group relative p-3 rounded-xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/20 hover:border-outline-variant/40 transition-all duration-200 cursor-pointer">
+<div class="flex items-start gap-3">
+<div class="relative flex-shrink-0">
+<div class="w-[52px] h-[52px] rounded-full p-[2px] bg-gradient-to-tr from-outline-variant to-secondary-container">
+<img class="w-full h-full rounded-full object-cover bg-surface-container-high" data-alt="A portrait illustration of Captain Ronald Vance, an experienced dieselpunk airship commander in weatherworn leather aviator gear, scarred jawline, warm rim lighting against a stormy dusk sky in muted dark charcoal and brass tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCutK4NiVPOsFdnRtKXId_OrAe3Ry4WYzT2n1ehNxxPKHfMbPgIH8BtZufNQ9ZeqSPP5J5bEb0ggnU2ehlbStPrq8IklXmH6Y87FqqlWEybawovLNLN1yajToUdg6iMB6QyTJcplRCKAHFjS_qDT5n-OPV6IQmnF9wOwFOXr4pMCTlnaiJUn5bK0iBs1R9n10oi1A3nkPtbZs0uLRYEXggqSODdDkhajEo88FcSvT9k8wRgUzbiNPsusg"/>
+</div>
+<span class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-tertiary-fixed-dim border-2 border-surface"></span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-baseline justify-between gap-1 mb-1">
+<h2 class="font-title-md text-title-md font-semibold text-on-surface truncate group-hover:text-primary transition-colors">
+                Captain Ronald Vance
+              </h2>
+<time class="font-caption-sm text-caption-sm text-outline flex-shrink-0">3h ago</time>
+</div>
+<div class="flex items-center gap-2 mb-1.5">
+<span class="px-2 py-0.5 rounded bg-surface-container-high border border-outline-variant/30 text-on-surface-variant font-caption-sm text-[10px] tracking-wide">
+                GPT-4o
+              </span>
+<span class="text-caption-sm text-outline/60 text-[10px]">• Aether Expedition</span>
+</div>
+<p class="font-prose-narration text-label-md text-secondary line-clamp-1 italic tracking-normal">
+              He adjusts his throttle lever with a weathered glove. “Hold fast to the rigging, we dive through the gale!”
+            </p>
+</div>
+</div>
+</article>
+<!-- Item 4: Dr. Alistair Thorne -->
+<article class="group relative p-3 rounded-xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/20 hover:border-outline-variant/40 transition-all duration-200 cursor-pointer">
+<div class="flex items-start gap-3">
+<div class="relative flex-shrink-0">
+<div class="w-[52px] h-[52px] rounded-full p-[2px] bg-gradient-to-tr from-primary/70 via-outline-variant/40 to-surface-container-high">
+<img class="w-full h-full rounded-full object-cover bg-surface-container-high" data-alt="A fine art painted portrait of Dr. Alistair Thorne, an enigmatic occult physician wearing silver-rimmed spectacles, dark velvet waistcoat, sitting in a shadow-drenched study illuminated by amber gas lamps and apothecary jars." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAS_MUB6CDMmjVg5iKenCQXwrP0wVyL6CEsV3YirG56alsL0ToKf41XvZT6V6KfXv-LUcB1tbPzjKODH9W3K6LKc15v2HREerGP2sqWaFeJe-8eOmedG4LuGTbb3B1BuSUAie1jOHQu9q8lhu0DkLqdSoMbpq2EsAHooLxHls9BtiJZN0zi4bMhf_MRXD14vrk7HzJP-Gez7sih1-1cXcfhu2HshEevvrhc7XY64tzgILKX7KqM3fvNTA"/>
+</div>
+<span class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-outline border-2 border-surface"></span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-baseline justify-between gap-1 mb-1">
+<h2 class="font-title-md text-title-md font-semibold text-on-surface truncate group-hover:text-primary transition-colors">
+                Dr. Alistair Thorne
+              </h2>
+<time class="font-caption-sm text-caption-sm text-outline flex-shrink-0">Yesterday</time>
+</div>
+<div class="flex items-center gap-2 mb-1.5">
+<span class="px-2 py-0.5 rounded bg-surface-container-high border border-outline-variant/30 text-on-surface-variant font-caption-sm text-[10px] tracking-wide">
+                Claude 3.5 Sonnet
+              </span>
+<span class="text-caption-sm text-outline/60 text-[10px]">• Cosmic Mystery</span>
+</div>
+<p class="font-prose-narration text-label-md text-secondary line-clamp-1 italic tracking-normal">
+              “The pulse does not conform to human anatomy. Come take a look, but keep your silver talisman close.”
+            </p>
+</div>
+</div>
+</article>
+<!-- Item 5: Kaelen the Wyrmwarden -->
+<article class="group relative p-3 rounded-xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/20 hover:border-outline-variant/40 transition-all duration-200 cursor-pointer">
+<div class="flex items-start gap-3">
+<div class="relative flex-shrink-0">
+<div class="w-[52px] h-[52px] rounded-full p-[2px] bg-gradient-to-tr from-primary-container via-outline-variant to-tertiary">
+<img class="w-full h-full rounded-full object-cover bg-surface-container-high" data-alt="A portrait of Kaelen the Wyrmwarden, an elven dragon-rider clad in scale armor and fur mantle, eyes reflecting embers in a volcanic mountain peak at night, warm firelight palette against obsidian rock surfaces." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCRAiQTHJSbAlYAN6IEhRaCcuOLEJQ-Hz1DiQHX5dNhJ9IPb2uGXcfipqHPySp3mpv0K_1qbWcbBZvE78ySOv2nOVNCaJe-JltMrY72GGrwK67J9x_Y2qlaQhcjSF0EYlO2ZZDn1Zo8_NHFM_yt8_42Dhv4ziGaI752qT1bQ7kxPoSUkFMNidzNfX2LISfP5O0L96l8wq-fuuL1Rb5ThtfnzEVRXl5GNAjezJb33lAwxSIYjw5mF22Lcw"/>
+</div>
+<span class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-primary-container border-2 border-surface"></span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-baseline justify-between gap-1 mb-1">
+<h2 class="font-title-md text-title-md font-semibold text-on-surface truncate group-hover:text-primary transition-colors">
+                Kaelen the Wyrmwarden
+              </h2>
+<time class="font-caption-sm text-caption-sm text-outline flex-shrink-0">2d ago</time>
+</div>
+<div class="flex items-center gap-2 mb-1.5">
+<span class="px-2 py-0.5 rounded bg-surface-container-high border border-outline-variant/30 text-on-surface-variant font-caption-sm text-[10px] tracking-wide">
+                GPT-4o
+              </span>
+<span class="text-caption-sm text-outline/60 text-[10px]">• Wyrm Epoch</span>
+</div>
+<p class="font-prose-narration text-label-md text-secondary line-clamp-1 italic tracking-normal">
+              A deep rumble vibrates beneath the cavern floor. “She senses your lineage. Do not draw your blade.”
+            </p>
+</div>
+</div>
+</article>
+</section>
+<!-- Floating Action Button (FAB): 'New Tale' with Firelight Glow -->
+<div class="fixed bottom-20 right-[max(1rem,calc(50%-180px))] z-40">
+<button aria-label="Begin a New Tale" class="flex items-center gap-2 px-4 py-3 rounded-full bg-primary-container text-on-primary font-title-md text-title-md font-semibold shadow-atmospheric active:scale-95 transition-all duration-150 hover:bg-tertiary" type="button">
+<span class="material-symbols-outlined text-[20px]" data-icon="edit_note">edit_note</span>
+<span class="tracking-tight text-[14px]">New Tale</span>
+</button>
+</div>
+<!-- BottomNavBar (from Shared Components JSON: label_icon, active: 'Chats') -->
+<footer class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-gutter-screen py-space-xs pb-safe bg-surface/90 backdrop-blur-md border-t border-outline-variant/30">
+<!-- Tab 1: Chats (ACTIVE TAB - Maps directly to current page) -->
+<a aria-current="page" class="flex flex-col items-center justify-center text-tertiary-fixed-dim py-1 gap-1 relative after:content-[''] after:w-1 after:h-1 after:bg-primary after:rounded-full after:mt-0.5 active:scale-95 transition-transform duration-150" href="#chats">
+<span class="material-symbols-outlined text-[22px]" data-icon="history_edu" data-weight="fill" style="font-variation-settings: 'FILL' 1;">history_edu</span>
+<span class="font-caption-sm text-caption-sm font-semibold tracking-wide">Chats</span>
+</a>
+<!-- Tab 2: Characters (INACTIVE) -->
+<a class="flex flex-col items-center justify-center text-secondary py-1 gap-1 hover:text-primary transition-colors duration-200 active:scale-95" href="#characters">
+<span class="material-symbols-outlined text-[22px]" data-icon="group">group</span>
+<span class="font-caption-sm text-caption-sm">Characters</span>
+</a>
+<!-- Tab 3: Settings (INACTIVE) -->
+<a class="flex flex-col items-center justify-center text-secondary py-1 gap-1 hover:text-primary transition-colors duration-200 active:scale-95" href="#settings">
+<span class="material-symbols-outlined text-[22px]" data-icon="tune">tune</span>
+<span class="font-caption-sm text-caption-sm">Settings</span>
+</a>
+</footer>
+</main>
+</body></html>
