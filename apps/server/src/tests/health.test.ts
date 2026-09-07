@@ -45,6 +45,12 @@ describe('GET /api/health', () => {
     ]) {
       expect(tables).toContain(table);
     }
+    // M1 addendum: per-character jailbreak groundwork (M2 Character Editor field).
+    const characterColumns = app.sqlite
+      .query<{ name: string }, []>('PRAGMA table_info(characters)')
+      .all()
+      .map((row) => row.name);
+    expect(characterColumns).toContain('jailbreak');
   });
 
   it('returns a 404 envelope for unknown api routes', async () => {

@@ -174,6 +174,7 @@ export const characters = sqliteTable('characters', {
   firstMessage: text().notNull().default(''),       // greeting
   alternateGreetings: text({ mode: 'json' }).$type<string[]>().notNull().default([]),
   systemExtras: text().notNull().default(''),       // extra system-prompt directives
+  jailbreak: text().notNull().default(''),          // per-character jailbreak (anti-refusal preamble; appended after the global PHI, §4.2)
   createdAt: text().notNull(), updatedAt: text().notNull(),
 });
 
@@ -326,6 +327,7 @@ Style rules (apply to every reply): keep *actions* in asterisks and spoken lines
 * `{{…}}` variables: `char`, `user`, `tagline`, `description`, `personality`, `behavior`, `communicationStyle`, `likes`, `dislikes`, `backstory`, `scenario`, `exampleDialogue`, `systemExtras` (character.systemExtras + global “system additions”), `personaDescription`, `personaName`.
 * `{{#block}}…{{/block}}` sections are omitted when their variable is empty (simple mustache-style sections implemented in ~40 lines in `packages/shared/prompt-variables.ts` — unit-tested; no Handlebars dependency).
 * `postHistoryInstructions` (a.k.a. jailbreak slot): appended as the **last system message after the history** when non-empty.
+* **Per-character jailbreak** (added M1 groundwork, field ships with the M2 Character Editor): `character.jailbreak` is an anti-refusal preamble for combat/blood/weapons RP. Composition of the final system slot = global `postHistoryInstructions` + `\n\n` + `character.jailbreak` (character jailbreak **last** — it is the most specific instruction and sits closest to the generation point). Both empty → no trailing system message.
 * Example dialogue is inserted into the system block wrapped in `<ExampleDialogue>` (replaced with a condensed placeholder if it exceeds 25 % of the context budget).
 
 ### 4.2 Request assembly
@@ -664,7 +666,7 @@ Settings page per mockup (providers/keys with mask+test, Intelligence Engine mod
 **Done:** both providers connected; browse real model catalogs; save/load presets; manual model entry works; unit tests for providers (mocked) pass.
 
 **M2 — Characters & personas** (~0.5–1 wk)
-Character/persona CRUD + editors per mockup (sections, avatar upload, voice archetype chips); import (Tavern V1 flat / ST V2 `chara_card_v2` / V3 `chara_card_v3` JSON — no V4+ exists; V3.1 is an unadopted RFC) with `extensions` passthrough / export V2; Characters page grid + selection mode.
+Character/persona CRUD + editors per mockup (sections, avatar upload, voice archetype chips); per-character **Jailbreak** field (§4.2 — DB column + migration already shipped in M1); import (Tavern V1 flat / ST V2 `chara_card_v2` / V3 `chara_card_v3` JSON — no V4+ exists; V3.1 is an unadopted RFC) with `extensions` passthrough / export V2; Characters page grid + selection mode.
 **Done:** create/edit/delete characters & personas; import real SillyTavern card JSON (V2 and V3 fixtures) maps all fields losslessly; export round-trips; grid matches mockup.
 
 **M3 — Chats, streaming, messages** (~1–1.5 wk) — the core

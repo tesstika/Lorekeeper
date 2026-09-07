@@ -202,3 +202,30 @@ key still reports "Connected". Real key validity is only proven at chat time (M3
 both providers implementable end-to-end with real keys entered via the UI (OpenRouter verified live with a
 placeholder key; UnoRouter path covered by mocked tests + A1 fallbacks until the real key is entered by
 the owner through the Settings UI).
+
+---
+
+## 7. M1 addendum — per-character "Jailbreak" groundwork (2026-09-07, post-sign-off)
+
+**Decision (owner):** M2's Character Editor will carry a per-character **Jailbreak** field — an
+anti-refusal preamble (combat / blood / weapons RP) composed into the final system slot.
+
+**Does M1 need changes?** The Settings/global side does **not** — the global
+`promptTemplate.postHistoryInstructions` slot (§4.1) already exists and stays as-is; the per-character
+jailbreak composes *with* it (contract pinned below). The **data layer** did need one small change, so it
+was landed in M1 rather than as M2 migration churn:
+
+| Change | File | Notes |
+|---|---|---|
+| `characters.jailbreak` column (`text NOT NULL DEFAULT ''`) | `apps/server/src/db/schema.ts` | Placed next to `systemExtras`. Empty string = feature off per character. |
+| Migration `0001_empty_shadowcat.sql` (`ALTER TABLE characters ADD jailbreak …`) | `apps/server/drizzle/` | Generated via `bun run db:generate`; applied automatically on boot by the existing `user_version`-guarded migrator — existing dev DBs pick it up with no data loss. |
+| Column assertion in the boot test | `apps/server/src/tests/health.test.ts` | `PRAGMA table_info(characters)` must contain `jailbreak` — locks the migration in CI. |
+| Plan updated to stay canonical | `IMPLEMENTATION_PLAN.md` §3 (sketch), §4.1/4.2 (composition), §10 (M2 bullet) | No behavior change to shipped M1 features. |
+
+**Prompt-composition contract (pinned for M3):** final trailing system message =
+`global postHistoryInstructions` + `\n\n` + `character.jailbreak` (character jailbreak **last** — most
+specific instruction closest to the generation point); both empty → no trailing system message.
+
+**Deferred to M2 (by design):** shared `CharacterInput`/`Character` zod schemas gain `jailbreak`, the
+Character Editor textarea (with an anti-refusal hint), ST V2/V3 card import mapping (card-level
+`post_history_instructions` → `jailbreak`), and prompt-preview rendering of the merged slot.

@@ -8,6 +8,13 @@
       "when": 1788758582248,
       "tag": "0000_fine_rattler",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1788774101184,
+      "tag": "0001_empty_shadowcat",
+      "breakpoints": true
     }
   ]
 }

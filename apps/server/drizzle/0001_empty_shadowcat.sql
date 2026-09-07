@@ -1,0 +1,1 @@
+ALTER TABLE `characters` ADD `jailbreak` text DEFAULT '' NOT NULL;

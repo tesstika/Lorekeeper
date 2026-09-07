@@ -27,6 +27,7 @@ export const characters = sqliteTable('characters', {
   firstMessage: text().notNull().default(''),
   alternateGreetings: text({ mode: 'json' }).$type<string[]>().notNull().default([]),
   systemExtras: text().notNull().default(''),
+  jailbreak: text().notNull().default(''),
   createdAt: text().notNull(),
   updatedAt: text().notNull(),
 });
