@@ -13,6 +13,10 @@ import { createDb } from './db/client';
 import { runMigrations } from './db/migrate';
 import { env } from './env';
 import { registerHealthRoutes } from './routes/health';
+import { registerPresetRoutes } from './routes/presets';
+import { registerProviderRoutes } from './routes/providers';
+import { registerSettingsRoutes } from './routes/settings';
+import { ensureSeedPresets } from './services/presetsRepo';
 
 export interface BuildAppOptions {
   dataDir?: string;
@@ -28,26 +32,18 @@ export async function buildApp(options: BuildAppOptions = {}) {
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
 
-  const { db, sqlite } = createDb(path.join(dataDir, 'lorekeeper.db'));
-  runMigrations(db);
-  app.decorate('db', db);
-  app.decorate('sqlite', sqlite);
-  app.addHook('onClose', () => {
-    sqlite.close();
-  });
-
-  await registerHealthRoutes(app);
-
-  let spaEnabled = false;
-  if (existsSync(env.frontendDistDir)) {
-    await app.register(fastifyStatic, { root: env.frontendDistDir, wildcard: false, index: false });
-    spaEnabled = true;
-  }
-  await app.register(fastifyStatic, { root: mediaDir, prefix: '/media/', decorateReply: false });
-
+  // Handlers must be set BEFORE route registration: each route context captures
+  // the instance error/not-found handler at registration time (fastify lib/context.js).
   app.setErrorHandler((error: FastifyError, _request, reply) => {
+    // Narrowed guard from fastify-type-provider-zod v7: `validation` carries the
+    // ZodFastifySchemaValidationError items (keyword/instancePath/message/params).
     if (hasZodFastifySchemaValidationErrors(error)) {
-      const details = (error as { details?: unknown }).details;
+      const details = error.validation.map((item) => ({
+        keyword: item.keyword,
+        path: item.instancePath,
+        message: item.message,
+        params: item.params,
+      }));
       return reply.code(400).send({
         statusCode: 400,
         code: 'validation_error',
@@ -82,6 +78,27 @@ export async function buildApp(options: BuildAppOptions = {}) {
       message: `Route ${request.method} ${request.url} not found`,
     });
   });
+
+  const { db, sqlite } = createDb(path.join(dataDir, 'lorekeeper.db'));
+  runMigrations(db);
+  ensureSeedPresets(db);
+  app.decorate('db', db);
+  app.decorate('sqlite', sqlite);
+  app.addHook('onClose', () => {
+    sqlite.close();
+  });
+
+  await registerHealthRoutes(app);
+  await registerProviderRoutes(app);
+  await registerPresetRoutes(app);
+  await registerSettingsRoutes(app);
+
+  let spaEnabled = false;
+  if (existsSync(env.frontendDistDir)) {
+    await app.register(fastifyStatic, { root: env.frontendDistDir, wildcard: false, index: false });
+    spaEnabled = true;
+  }
+  await app.register(fastifyStatic, { root: mediaDir, prefix: '/media/', decorateReply: false });
 
   return app;
 }

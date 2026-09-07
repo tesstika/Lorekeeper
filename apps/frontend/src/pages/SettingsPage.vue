@@ -1,63 +1,111 @@
 <script setup lang="ts" vapor>
-import IconPresets from '~icons/lucide/bookmark';
+import { APP_VERSION } from '@lorekeeper/shared';
+import { onMounted, ref } from 'vue';
+import ComposerCard from '@/components/settings/ComposerCard.vue';
+import EngineCard from '@/components/settings/EngineCard.vue';
+import PresetCard from '@/components/settings/PresetCard.vue';
+import PromptTemplateCard from '@/components/settings/PromptTemplateCard.vue';
+import ProviderKeysCard from '@/components/settings/ProviderKeysCard.vue';
+import SamplingCard from '@/components/settings/SamplingCard.vue';
+import BottomNav from '@/components/ui/BottomNav.vue';
+import ToastHost from '@/components/ui/ToastHost.vue';
+import { useSettingsStore } from '@/stores/settings';
+import { useUiStore } from '@/stores/ui';
 import IconBrain from '~icons/lucide/brain';
-import IconKey from '~icons/lucide/key-round';
-import IconComposer from '~icons/lucide/pen-tool';
 import IconRotate from '~icons/lucide/rotate-ccw';
 import IconSliders from '~icons/lucide/sliders-horizontal';
 
-const cards = [
-  { icon: IconKey, title: 'API Providers & Keys', subtitle: 'OpenRouter & UnoRouter connections' },
-  { icon: IconBrain, title: 'Intelligence Engine', subtitle: 'Default provider, model & persona' },
-  {
-    icon: IconSliders,
-    title: 'Sampling & Context Tuning',
-    subtitle: 'Temperature, penalties, stop sequences',
-  },
-  {
-    icon: IconComposer,
-    title: 'Composer Behavior',
-    subtitle: 'Enter-to-send, auto-scroll, animations',
-  },
-  { icon: IconPresets, title: 'Saved Generation Presets', subtitle: 'Reusable parameter bundles' },
-];
+const store = useSettingsStore();
+const ui = useUiStore();
+
+onMounted(() => {
+  void store.load();
+});
+
+const confirmingReset = ref(false);
+
+function resetToDefaults(): void {
+  if (!confirmingReset.value) {
+    confirmingReset.value = true;
+    setTimeout(() => {
+      confirmingReset.value = false;
+    }, 3000);
+    return;
+  }
+  confirmingReset.value = false;
+  store.resetToDefaults().catch((error) => ui.notify(String(error), 'error'));
+}
 </script>
 
 <template>
-  <div class="mx-auto flex min-h-dvh max-w-[390px] flex-col border-x border-outline-variant/20 bg-surface pb-24">
-    <header class="sticky top-0 z-40 flex items-center justify-between bg-surface/85 px-5 pb-3 pt-9 backdrop-blur-md">
+  <div class="mx-auto min-h-dvh max-w-[390px] border-x border-outline-variant/20 bg-surface pb-24">
+    <header class="sticky top-0 z-40 flex items-center justify-between border-b border-outline-variant/30 bg-surface/85 px-5 pb-3 pt-9 backdrop-blur-md">
       <div class="flex items-center gap-2">
-        <IconSliders class="size-6 text-primary" />
-        <h1 class="text-[22px] font-bold text-on-surface">Settings</h1>
+        <IconSliders class="size-5 text-primary" />
+        <h1 class="text-[20px] font-bold leading-[28px] tracking-tight text-primary">Settings</h1>
       </div>
       <button
         type="button"
-        class="flex items-center gap-1.5 rounded-full border border-outline-variant/40 px-3 py-1.5 text-[12px] font-medium text-secondary transition-colors hover:border-error/50 hover:text-error"
+        class="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors active:opacity-75"
+        :class="
+          confirmingReset
+            ? 'border-error/60 bg-error-container/40 text-error'
+            : 'border-outline-variant/40 bg-surface-container text-secondary hover:border-outline-variant hover:text-primary'
+        "
+        :aria-label="confirmingReset ? 'Confirm reset to defaults' : 'Reset settings to defaults'"
+        @click="resetToDefaults()"
       >
-        <IconRotate class="size-3.5" /> Reset
+        <IconRotate class="size-3.5" />
+        {{ confirmingReset ? 'Confirm Reset?' : 'Reset' }}
       </button>
     </header>
 
-    <main class="flex flex-1 flex-col gap-3 px-4 pt-2">
-      <section
-        v-for="card in cards"
-        :key="card.title"
-        class="rounded-xl border border-outline-variant/30 bg-surface-container-low p-4"
-      >
-        <div class="flex items-center gap-2.5">
-          <div class="flex size-9 items-center justify-center rounded-lg bg-surface-container">
-            <component :is="card.icon" class="size-5 text-primary" />
-          </div>
-          <div>
-            <div class="text-[14px] font-semibold text-on-surface">{{ card.title }}</div>
-            <div class="text-[11px] text-outline">{{ card.subtitle }}</div>
-          </div>
+    <main class="space-y-6 px-5 pb-6 pt-4">
+      <!-- Sanctum status summary -->
+      <div class="flex items-start justify-between">
+        <div>
+          <span class="text-[11px] font-medium uppercase leading-[14px] tracking-wider text-secondary">
+            Sanctum Codex Configuration
+          </span>
+          <p class="mt-0.5 font-serif text-sm leading-6 text-on-surface-variant">
+            Parameters governing narrative consciousness and roleplay dynamics.
+          </p>
         </div>
-      </section>
+        <div
+          class="flex shrink-0 items-center gap-1.5 rounded-full border border-outline-variant/30 bg-surface-container-high px-2.5 py-1"
+        >
+          <span
+            class="h-2 w-2 rounded-full"
+            :class="store.engineReady ? 'animate-pulse bg-emerald-400' : 'bg-outline-variant'"
+          ></span>
+          <span class="text-[11px] leading-[14px]" :class="store.engineReady ? 'text-emerald-300' : 'text-secondary'">
+            {{ store.engineReady ? 'Engine Ready' : 'Setup Needed' }}
+          </span>
+        </div>
+      </div>
 
-      <p class="mt-2 text-center text-[11px] text-outline">
-        Lorekeeper — created by Testika · MIT · v0.1.0
-      </p>
+      <template v-if="store.settings">
+        <ProviderKeysCard :providers="store.providers" />
+        <EngineCard />
+        <SamplingCard />
+        <ComposerCard />
+        <PresetCard />
+        <PromptTemplateCard />
+      </template>
+      <div v-else class="flex items-center justify-center py-16 text-[13px] text-secondary">
+        <IconBrain class="mr-2 size-4 animate-pulse" /> Opening the sanctum…
+      </div>
+
+      <!-- Archival version stamp -->
+      <div class="space-y-1 pb-2 pt-4 text-center text-[11px] leading-[14px] text-secondary">
+        <p>Lorekeeper Sanctum • v{{ APP_VERSION }}</p>
+        <p class="text-[10px] text-outline">
+          Created by Testika · MIT · keys encrypted at rest (AES-256-GCM)
+        </p>
+      </div>
     </main>
+
+    <ToastHost />
+    <BottomNav />
   </div>
 </template>

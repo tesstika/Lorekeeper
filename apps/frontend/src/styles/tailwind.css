@@ -67,3 +67,42 @@ body {
   background: #363432;
   border-radius: 9999px;
 }
+
+/* Custom subtle slider aesthetics (settings mockup) */
+input[type="range"].lk-range {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  height: 18px;
+}
+input[type="range"].lk-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 18px;
+  width: 18px;
+  border-radius: 9999px;
+  background: var(--color-primary-container);
+  cursor: pointer;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--color-primary-container) 45%, transparent);
+  margin-top: -6px;
+}
+input[type="range"].lk-range::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 6px;
+  cursor: pointer;
+  background: var(--color-surface-container-highest);
+  border-radius: 9999px;
+}
+input[type="range"].lk-range::-moz-range-thumb {
+  height: 18px;
+  width: 18px;
+  border: none;
+  border-radius: 9999px;
+  background: var(--color-primary-container);
+  cursor: pointer;
+}
+input[type="range"].lk-range::-moz-range-track {
+  height: 6px;
+  background: var(--color-surface-container-highest);
+  border-radius: 9999px;
+}
