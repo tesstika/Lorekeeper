@@ -495,6 +495,8 @@ export const chatErrorSchema = z.object({
   statusCode: z.number().optional(),
   retryAfterMs: z.number().optional(),
 });
+/** API-level ChatError (z.output — optional keys may be explicitly undefined). */
+export type ChatErrorData = z.output<typeof chatErrorSchema>;
 
 export const chatStatusSchema = z.enum(chatStatuses);
 

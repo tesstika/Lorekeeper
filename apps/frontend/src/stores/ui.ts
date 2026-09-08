@@ -15,10 +15,14 @@ export interface ConfirmOptions {
   confirmLabel?: string;
   cancelLabel?: string;
   danger?: boolean;
+  /** Optional checkbox (D7: "Also delete the reply that followed?"). */
+  checkboxLabel?: string;
+  checkboxDefault?: boolean;
 }
 
 interface PendingConfirm extends ConfirmOptions {
-  resolve: (accepted: boolean) => void;
+  resolveBoolean: ((accepted: boolean) => void) | null;
+  resolveCheckbox: ((result: { accepted: boolean; checked: boolean }) => void) | null;
 }
 
 export const useUiStore = defineStore('ui', () => {
@@ -35,19 +39,50 @@ export const useUiStore = defineStore('ui', () => {
     toasts.value = toasts.value.filter((toast) => toast.id !== id);
   }
 
-  // -- Confirm dialog (D7: every destructive action confirms, no undo toasts) --
+  // -- Confirm dialog (D7) ----------------------------------------------------
+  // D-F1 singleton safety: a new confirm while one is pending auto-cancels the
+  // previous promise (never left dangling) and replaces the dialog.
   const pendingConfirm = ref<PendingConfirm | null>(null);
 
+  function settleConfirm(accepted: boolean, checked: boolean): void {
+    const pending = pendingConfirm.value;
+    pendingConfirm.value = null;
+    if (!pending) return;
+    pending.resolveBoolean?.(accepted);
+    pending.resolveCheckbox?.({ accepted, checked });
+  }
+
   function confirm(options: ConfirmOptions): Promise<boolean> {
+    settleConfirm(false, options.checkboxDefault ?? false);
     return new Promise((resolve) => {
-      pendingConfirm.value = { ...options, resolve };
+      pendingConfirm.value = {
+        ...options,
+        resolveBoolean: resolve,
+        resolveCheckbox: null,
+      };
     });
   }
 
-  function settleConfirm(accepted: boolean): void {
-    pendingConfirm.value?.resolve(accepted);
-    pendingConfirm.value = null;
+  function confirmWithCheckbox(
+    options: ConfirmOptions,
+  ): Promise<{ accepted: boolean; checked: boolean }> {
+    settleConfirm(false, options.checkboxDefault ?? false);
+    return new Promise((resolve) => {
+      pendingConfirm.value = {
+        ...options,
+        resolveBoolean: null,
+        resolveCheckbox: resolve,
+      };
+    });
   }
 
-  return { toasts, notify, dismiss, pendingConfirm, confirm, settleConfirm };
+  return {
+    toasts,
+    notify,
+    dismiss,
+    pendingConfirm,
+    confirm,
+    confirmWithCheckbox,
+    settleConfirm,
+  };
 });

@@ -239,7 +239,7 @@ describe('multimodal request assembly (§4.2)', () => {
       const parts = finalTurn?.content as Array<{ type: string }>;
       expect(parts[0]?.type).toBe('text');
       expect(parts[1]?.type).toBe('image_url');
-      expect(String((parts[1] as { imageUrl: { url: string } }).imageUrl.url)).toContain(
+      expect(String((parts[1] as unknown as { imageUrl: { url: string } }).imageUrl.url)).toContain(
         'data:image/png;base64,',
       );
     } finally {

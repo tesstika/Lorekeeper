@@ -1,14 +1,13 @@
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import type { SseEvent } from '@lorekeeper/shared';
+import type { SseEvent, StreamEvent } from '@lorekeeper/shared';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '../app';
 import { isGenerating, runGenerationSession } from '../generation/session';
 import type { SseWriter } from '../generation/sseWriter';
 import { providerRegistry, setProviderForTesting } from '../providers';
-import type { LlmProvider, StreamEvent } from '../providers/types';
-import { ProviderError } from '../providers/types';
+import { type LlmProvider, ProviderError } from '../providers/types';
 import { KeyStore } from '../services/keyStore';
 import { setModelCache } from '../services/settingsRepo';
 

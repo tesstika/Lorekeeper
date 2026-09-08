@@ -4,7 +4,17 @@ import type {
   Character,
   CharacterCreateInput,
   CharacterPatch,
+  Chat,
+  ChatDetail,
+  ChatMessage,
+  ChatPatch,
+  ChatSummary,
+  CreateChatInput,
+  DeleteMessageResponse,
+  EditMessageInput,
+  EditMessageResponse,
   ImportCardResponse,
+  MessageInput,
   Persona,
   PersonaCreateInput,
   PersonaPatch,
@@ -14,6 +24,7 @@ import type {
   ProviderId,
   ProviderInfo,
   ProviderModelsResponse,
+  SendMessageResponse,
   SettingsPatch,
   SettingsResponse,
   TestConnectionResponse,
@@ -105,6 +116,33 @@ export const api = {
   deletePersona: (id: string) => request<{ ok: true }>('DELETE', `/personas/${id}`),
   setDefaultPersona: (id: string) =>
     request<{ persona: Persona }>('PUT', `/personas/${id}/default`),
+
+  // -- Chats & messages (M3) --------------------------------------------------
+  getChats: (query: { status?: string; q?: string } = {}) => {
+    const params = new URLSearchParams();
+    if (query.status) params.set('status', query.status);
+    if (query.q) params.set('q', query.q);
+    const suffix = params.toString() ? `?${params.toString()}` : '';
+    return request<ChatSummary[]>('GET', `/chats${suffix}`);
+  },
+  getChat: (id: string) => request<ChatDetail>('GET', `/chats/${id}`),
+  createChat: (input: CreateChatInput) => request<ChatDetail>('POST', '/chats', input),
+  updateChat: (id: string, patch: ChatPatch) => request<Chat>('PATCH', `/chats/${id}`, patch),
+  deleteChat: (id: string) => request<{ ok: true }>('DELETE', `/chats/${id}`),
+
+  sendMessage: (chatId: string, input: MessageInput) =>
+    request<SendMessageResponse>('POST', `/chats/${chatId}/messages`, input),
+  editMessage: (chatId: string, messageId: string, input: EditMessageInput) =>
+    request<EditMessageResponse>('POST', `/chats/${chatId}/messages/${messageId}`, input),
+  deleteMessage: (chatId: string, messageId: string, withReplies: boolean) =>
+    request<DeleteMessageResponse>(
+      'DELETE',
+      `/chats/${chatId}/messages/${messageId}?withReplies=${withReplies ? '1' : '0'}`,
+    ),
+  activateVariant: (chatId: string, messageId: string, variantId: string) =>
+    request<{ message: ChatMessage }>('POST', `/chats/${chatId}/messages/${messageId}/activate`, {
+      variantId,
+    }),
 
   uploadAttachment: (file: File): Promise<AttachmentResponse> => {
     const form = new FormData();

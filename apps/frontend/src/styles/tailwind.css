@@ -106,3 +106,179 @@ input[type="range"].lk-range::-moz-range-track {
   background: var(--color-surface-container-highest);
   border-radius: 9999px;
 }
+
+/* ---------------------------------------------------------------------------
+ * Chat prose styles (plan §6.1/§6.6) — serif body, dialogue/narration classes.
+ * ------------------------------------------------------------------------- */
+.lk-prose {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  line-height: 1.7;
+}
+.lk-prose p {
+  margin-block: 0.5rem;
+}
+.lk-prose p:first-child {
+  margin-top: 0;
+}
+.lk-prose p:last-child {
+  margin-bottom: 0;
+}
+/* Spoken lines: ivory with a primary left border (mockup). */
+.lk-prose p.lk-dialogue {
+  padding-left: 0.75rem;
+  border-left: 2px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
+  color: #f3efe6;
+  font-weight: 500;
+  font-style: normal;
+}
+/* Narration: italic serif, muted (mockup). */
+.lk-prose p.lk-narration {
+  font-style: italic;
+  color: color-mix(in srgb, var(--color-on-surface-variant) 85%, transparent);
+}
+.lk-prose blockquote {
+  border-left: 2px solid var(--color-outline-variant);
+  padding-left: 0.75rem;
+  color: var(--color-secondary);
+}
+.lk-prose a {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.lk-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+.lk-prose th,
+.lk-prose td {
+  border: 1px solid var(--color-outline-variant);
+  padding: 0.25rem 0.5rem;
+  text-align: left;
+}
+
+/* Code blocks: fenced highlight.js with a working copy bar. */
+.lk-code {
+  margin-block: 0.6rem;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-outline-variant);
+  background: var(--color-surface-container-lowest);
+}
+.lk-code-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.25rem 0.6rem;
+  border-bottom: 1px solid var(--color-outline-variant);
+  background: var(--color-surface-container-low);
+  font-family: var(--font-sans);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-outline);
+}
+.lk-code-copy {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-secondary);
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+.lk-code-copy:hover {
+  color: var(--color-primary);
+}
+.lk-code pre {
+  margin: 0;
+  padding: 0.6rem 0.75rem;
+  overflow-x: auto;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+/* ---------------------------------------------------------------------------
+ * Streaming animations (plan §6.7, D9) — Stage A caret + fading runs.
+ * ------------------------------------------------------------------------- */
+@keyframes lk-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.lk-streaming .lk-fade-in {
+  animation: lk-fade-in 180ms ease-out;
+}
+
+.lk-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1.05em;
+  margin-left: 1px;
+  border-radius: 1px;
+  background: var(--color-primary);
+  vertical-align: text-bottom;
+  animation: lk-caret-blink var(--lk-caret-blink, 500ms) linear infinite;
+}
+@keyframes lk-caret-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Stage B: the delivered dot blinks exactly N × interval, then fades. */
+.lk-delivered {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  animation:
+    lk-delivered var(--lk-delivered-ms, 250ms) ease-in-out var(--lk-delivered-n, 6),
+    lk-delivered-fade 600ms ease-in calc(var(--lk-delivered-ms, 250ms) * var(--lk-delivered-n, 6))
+    forwards;
+}
+.lk-delivered-stop {
+  background: var(--color-tertiary-container);
+}
+.lk-delivered-aborted {
+  background: #fbbf24;
+}
+.lk-delivered-error {
+  background: var(--color-error);
+}
+@keyframes lk-delivered {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.15;
+  }
+}
+@keyframes lk-delivered-fade {
+  to {
+    opacity: 0;
+  }
+}
+
+/* Reduced motion: static caret, no fades, no blink (§6.7 accessibility). */
+@media (prefers-reduced-motion: reduce) {
+  .lk-streaming .lk-fade-in {
+    animation: none;
+  }
+  .lk-caret {
+    animation: none;
+  }
+  .lk-delivered {
+    animation: none;
+    opacity: 1;
+  }
+}
