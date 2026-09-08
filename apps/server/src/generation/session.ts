@@ -346,7 +346,16 @@ export async function runGenerationSession(options: SessionOptions): Promise<Ses
       thrown = error;
     }
 
-    if (idleFired && !streamError && doneReason === null) {
+    // The watchdog aborts after >idleTimeoutMs of silence. Providers report an
+    // abort either by throwing AbortError or by ending with done('aborted')
+    // (openaiCompat catches mid-stream aborts) — classify both as idle_timeout
+    // unless the CLIENT closed (a user Stop always wins).
+    if (
+      idleFired &&
+      !clientClosed &&
+      !streamError &&
+      (doneReason === null || doneReason === 'aborted')
+    ) {
       thrown = new ProviderError(
         'idle_timeout',
         `Provider sent no data for over ${Math.round(idleTimeoutMs / 1000)}s — stream aborted`,

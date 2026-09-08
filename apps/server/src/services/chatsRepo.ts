@@ -289,6 +289,10 @@ export function getChatDetail(db: LorekeeperDb, id: string): ChatDetailRecord | 
 }
 
 export function updateChat(db: LorekeeperDb, id: string, patch: ChatUpdate): ChatRow | null {
+  // A schema-valid `{}` (or all-undefined) patch means "no change" — drizzle
+  // would throw "No values to set" on an empty update set.
+  const hasValues = Object.values(patch).some((value) => value !== undefined);
+  if (!hasValues) return getChatRow(db, id);
   const row = db.update(chats).set(patch).where(eq(chats.id, id)).returning().all()[0];
   return row ?? null;
 }

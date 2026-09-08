@@ -102,17 +102,9 @@ watch(
   () => streaming.isStreaming,
   (live, wasLive) => {
     if (wasLive && !live && streaming.streamingVariantId) {
-      const variantId = streaming.streamingVariantId;
-      const message = detail.value?.messages.find((m) =>
-        m.variants.some((v) => v.id === variantId),
-      );
-      const tone =
-        message?.finishReason === 'error'
-          ? 'error'
-          : message?.finishReason === 'aborted'
-            ? 'aborted'
-            : 'stop';
-      markJustFinished(variantId, tone);
+      // Tone comes from the SSE terminal event itself (store.lastOutcome) —
+      // the local cache is not yet reconciled when this watcher runs.
+      markJustFinished(streaming.streamingVariantId, streaming.lastOutcome);
     }
   },
 );

@@ -17,6 +17,7 @@ import {
   sendMessageResponseSchema,
 } from '@lorekeeper/shared';
 import { z } from 'zod';
+import { isGenerating } from '../generation/session';
 import {
   ChatRepoError,
   createChat,
@@ -31,6 +32,7 @@ import {
 import {
   activateVariant,
   appendUserMessage,
+  cleanOrphanedPendingVariants,
   deleteMessage,
   editMessage,
   getMessageRow,
@@ -92,6 +94,13 @@ export async function registerChatRoutes(app: AppInstance): Promise<void> {
       },
     },
     async (request) => {
+      // Lazy crash cleanup (plan §5): a server crash mid-stream leaves an empty
+      // pending variant (finishReason NULL, text ''). Skipped while a
+      // generation is live for this chat — an in-flight variant is pending by
+      // design until finalizeVariant commits.
+      if (!isGenerating(request.params.id)) {
+        cleanOrphanedPendingVariants(app.db, request.params.id);
+      }
       const detail = getChatDetail(app.db, request.params.id);
       if (!detail) throw httpError(404, 'not_found', `Chat ${request.params.id} does not exist`);
       return detailPayload(detail);

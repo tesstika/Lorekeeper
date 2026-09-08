@@ -1,5 +1,5 @@
 import type { SseEvent } from '@lorekeeper/shared';
-import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { FastifyReply } from 'fastify';
 
 /**
  * Transport seam for the generation session: the Fastify route wires this to
@@ -14,7 +14,7 @@ export interface SseWriter {
   isClosed(): boolean;
 }
 
-export function createSseWriter(request: FastifyRequest, reply: FastifyReply): SseWriter {
+export function createSseWriter(reply: FastifyReply): SseWriter {
   // Take over the raw response: Fastify skips serialization/hooks from here on.
   reply.hijack();
   const raw = reply.raw;
@@ -27,10 +27,15 @@ export function createSseWriter(request: FastifyRequest, reply: FastifyReply): S
 
   let closed = false;
   const closeHandlers: Array<() => void> = [];
-  request.raw.on('close', () => {
+  // Client-disconnect signal: the RESPONSE stream's 'close' fires when the TCP
+  // connection drops mid-stream (Stop button / tab close) and after a normal
+  // end() — the session marks itself done first, so the latter is a no-op via
+  // the closed flag. `request.raw.on('close')` is NOT usable here: since
+  // Node 16 (carried into Bun) IncomingMessage 'close' also fires when a
+  // request body is merely consumed, which falsely aborts any generation
+  // POSTed with a body after its first delta.
+  raw.on('close', () => {
     if (closed) return;
-    // 'close' also fires after a normal end(); the session marks itself done
-    // and ignores the callback via isClosed() before that matters.
     closed = true;
     for (const handler of closeHandlers) handler();
   });

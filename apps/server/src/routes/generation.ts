@@ -30,7 +30,7 @@ export async function registerGenerationRoutes(app: AppInstance): Promise<void> 
     if (!getChatRow(app.db, chatId)) {
       throw httpError(404, 'not_found', `Chat ${chatId} does not exist`);
     }
-    const writer = createSseWriter(request, reply);
+    const writer = createSseWriter(reply);
     await runGenerationSession({
       db: app.db,
       dataDir: app.dataDir,
@@ -57,7 +57,7 @@ export async function registerGenerationRoutes(app: AppInstance): Promise<void> 
       if (!getChatRow(app.db, chatId)) {
         throw httpError(404, 'not_found', `Chat ${chatId} does not exist`);
       }
-      const writer = createSseWriter(request, reply);
+      const writer = createSseWriter(reply);
       await runGenerationSession({
         db: app.db,
         dataDir: app.dataDir,

@@ -183,6 +183,31 @@ describe('context budget & trimming (§4.3)', () => {
     expect(included.map((m) => m.seq)).toEqual([0, 3]);
     expect(droppedCount).toBe(2);
   });
+
+  it('keeps the selected history contiguous — a small orphan cannot survive a dropped newer unit (audit regression)', () => {
+    // greeting@0 | orphan user@1 (small) | big pair@2,3 | newest pair@4,5.
+    // Budget fits greeting + newest + the small orphan, but not the big pair.
+    const history = [
+      msg(0, 'assistant', 'g'),
+      msg(1, 'user', 'A'.repeat(50)),
+      msg(2, 'user', 'B'.repeat(2400)),
+      msg(3, 'assistant', 'B'.repeat(2400)),
+      msg(4, 'user', 'C'.repeat(50)),
+      msg(5, 'assistant', 'C'.repeat(50)),
+    ];
+    const budget =
+      estimateTokens('g') +
+      estimateTokens('C'.repeat(50)) * 2 +
+      estimateTokens('A'.repeat(50)) +
+      20;
+    const { included } = selectHistoryForPrompt(history, budget);
+    const seqs = included.map((m) => m.seq);
+    // Strict oldest-side trim: no hole between the greeting and the newest block.
+    const middle = seqs.filter((seq) => seq !== 0).sort((a, b) => a - b);
+    const first = middle[0] ?? 0;
+    const last = middle.at(-1) ?? 0;
+    expect(last - first + 1).toBe(middle.length);
+  });
 });
 
 describe('multimodal request assembly (§4.2)', () => {

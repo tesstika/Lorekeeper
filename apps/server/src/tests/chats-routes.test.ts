@@ -225,6 +225,25 @@ describe('chat PATCH (defaults-free discipline)', () => {
     });
     expect(response.statusCode).toBe(400);
   });
+
+  it('treats an empty {} patch as a no-op instead of 500 (audit regression)', async () => {
+    const characterId = await createCharacter();
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/chats',
+      payload: { characterId, modelId: 'keep/me' },
+    });
+    const chatId = (created.json() as { chat: { id: string } }).chat.id;
+    const response = await app.inject({
+      method: 'PATCH',
+      url: `/api/chats/${chatId}`,
+      payload: {},
+    });
+    expect(response.statusCode).toBe(200);
+    const chat = response.json() as { title: string; modelId: string | null };
+    expect(chat.title).toBe(CHARACTER.name);
+    expect(chat.modelId).toBe('keep/me');
+  });
 });
 
 describe('message append / edit / delete semantics', () => {
@@ -583,6 +602,68 @@ describe('message append / edit / delete semantics', () => {
       .all()
       .filter((row) => row.chatId === chatId);
     expect(rows).toHaveLength(0);
+  });
+});
+
+describe('orphaned pending-variant cleanup (plan §5, audit wiring)', () => {
+  it('removes crash-left pending variants on the next chat load and renumbers', async () => {
+    const characterId = await createCharacter();
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/chats',
+      payload: { characterId },
+    });
+    const chatId = (created.json() as { chat: { id: string } }).chat.id;
+    await app.inject({
+      method: 'POST',
+      url: `/api/chats/${chatId}/messages`,
+      payload: { text: 'before the crash' },
+    });
+    // Simulate a server crash mid-stream: a pending variant row with no text
+    // and a NULL finish reason.
+    insertAssistantRow(chatId, 2, '', 'crash-group');
+    db.update(messagesTable)
+      .set({ finishReason: null })
+      .where(eqGroupId(chatId, 'crash-group'))
+      .run();
+
+    const pendingBefore = db
+      .select()
+      .from(messagesTable)
+      .where(and(eq(messagesTable.chatId, chatId), eqGroupId(chatId, 'crash-group')))
+      .all();
+    expect(pendingBefore).toHaveLength(1);
+    expect(pendingBefore[0]?.finishReason).toBeNull();
+
+    const after = await app.inject({ method: 'GET', url: `/api/chats/${chatId}` });
+    expect(after.statusCode).toBe(200);
+    const body = after.json() as {
+      messages: Array<{ seq: number; role: string; finishReason: string | null }>;
+    };
+    // The empty pending row is gone and seqs are dense again.
+    expect(body.messages).toHaveLength(2);
+    expect(body.messages.map((m) => m.seq)).toEqual([0, 1]);
+  });
+
+  it('keeps healthy rows: finished or partial variants are never cleaned', async () => {
+    const characterId = await createCharacter();
+    const created = await app.inject({
+      method: 'POST',
+      url: '/api/chats',
+      payload: { characterId },
+    });
+    const chatId = (created.json() as { chat: { id: string } }).chat.id;
+    // A finished variant with empty text (pure error bubble, D10) must survive.
+    insertAssistantRow(chatId, 1, '', 'error-group');
+    db.update(messagesTable)
+      .set({ finishReason: 'error', isError: true })
+      .where(eqGroupId(chatId, 'error-group'))
+      .run();
+
+    const detail = await app.inject({ method: 'GET', url: `/api/chats/${chatId}` });
+    const body = detail.json() as { messages: Array<{ finishReason: string | null }> };
+    expect(body.messages).toHaveLength(2);
+    expect(body.messages.some((m) => m.finishReason === 'error')).toBe(true);
   });
 });
 

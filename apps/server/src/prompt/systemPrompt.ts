@@ -224,15 +224,18 @@ export function selectHistoryForPrompt(
   let used = newestBlock.reduce((sum, message) => sum + estimateTokens(message.text), 0);
   const keptUnits: PromptHistoryMessage[][] = [];
   let dropped = 0;
+  // Strict oldest-side trim (§4.3: "drop oldest blocks until it fits"): the
+  // first unit that does not fit ends the walk — everything older is dropped
+  // with it, so the kept history is always contiguous.
   for (let u = units.length - 1; u >= 0; u -= 1) {
     const unit = units[u] as PromptHistoryMessage[];
     const unitTokens = unit.reduce((sum, message) => sum + estimateTokens(message.text), 0);
-    if (used + unitTokens <= budgetTokens) {
-      used += unitTokens;
-      keptUnits.push(unit);
-    } else {
-      dropped += unit.length;
+    if (used + unitTokens > budgetTokens) {
+      dropped += units.slice(0, u + 1).reduce((sum, remaining) => sum + remaining.length, 0);
+      break;
     }
+    used += unitTokens;
+    keptUnits.push(unit);
   }
 
   const included: PromptHistoryMessage[] = [];

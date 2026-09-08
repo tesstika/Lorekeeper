@@ -360,6 +360,43 @@ describe('SSE generation session', () => {
     expect(reply.error?.code).toBe('idle_timeout');
   });
 
+  it('reports idle_timeout when the watchdog aborts a stream the provider ends as done(aborted)', async () => {
+    // Real-provider shape (openaiCompat): an abort caught mid-stream is
+    // reported as a done('aborted') event, not a thrown AbortError.
+    setProviderForTesting(
+      'openrouter',
+      scriptProvider(async function* (signal) {
+        yield { type: 'delta', text: 'first byte' };
+        await new Promise<void>((resolve) => {
+          if (signal.aborted) resolve();
+          else signal.addEventListener('abort', () => resolve(), { once: true });
+        });
+        yield { type: 'done', finishReason: 'aborted' };
+      }),
+    );
+    await sendUserMessage('idle-aborted-done probe');
+    const harness = fakeWriter();
+    const outcome = await runGenerationSession({
+      db: app.db,
+      dataDir,
+      keyStore,
+      writer: harness.writer,
+      chatId,
+      idleTimeoutMs: 60,
+      idleCheckMs: 20,
+    });
+    expect(outcome.status).toBe('error');
+    const errorEvent = harness.events.at(-1);
+    expect(errorEvent?.type).toBe('error');
+    if (errorEvent?.type === 'error') {
+      expect(errorEvent.code).toBe('idle_timeout');
+    }
+    const messages = await chatMessages();
+    const reply = messages.at(-1) as { isError: boolean; error: { code: string } | null };
+    expect(reply.isError).toBe(true);
+    expect(reply.error?.code).toBe('idle_timeout');
+  });
+
   it('reports no_key before any traffic when the provider key is missing', async () => {
     setProviderForTesting(
       'unorouter',
