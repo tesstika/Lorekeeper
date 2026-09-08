@@ -1,11 +1,11 @@
 import { z } from 'zod';
-import { providerIds } from './enums';
+import { chatStatuses, messageRoles, providerIds } from './enums';
 
 // ---------------------------------------------------------------------------
 // Default prompt template (plan §4.1)
 // ---------------------------------------------------------------------------
 
-export const DEFAULT_SYSTEM_TEMPLATE = `{systemExtras}
+export const DEFAULT_SYSTEM_TEMPLATE = `{{systemExtras}}
 You are {{char}} in an ongoing roleplay with {{user}}.
 
 <Character>
@@ -474,3 +474,207 @@ export const attachmentResponseSchema = z.object({
   originalName: z.string(),
 });
 export type AttachmentResponse = z.output<typeof attachmentResponseSchema>;
+
+// ---------------------------------------------------------------------------
+// Chats & messages (plan §3.1, §7.1 — M3)
+// ---------------------------------------------------------------------------
+
+/** Zod mirror of the `TokenUsage` interface in types.ts (drizzle $type + API). */
+export const tokenUsageSchema = z.object({
+  promptTokens: z.number(),
+  completionTokens: z.number(),
+  costUsd: z.number().optional(),
+});
+
+/** Zod mirror of the `ChatError` interface in types.ts (inline errors, D10). */
+export const chatErrorSchema = z.object({
+  code: z.string(),
+  message: z.string(),
+  providerId: z.string().optional(),
+  modelId: z.string().optional(),
+  statusCode: z.number().optional(),
+  retryAfterMs: z.number().optional(),
+});
+
+export const chatStatusSchema = z.enum(chatStatuses);
+
+// -- Chat CRUD ----------------------------------------------------------------
+
+export const createChatInputSchema = z.object({
+  characterId: z.string().min(1),
+  personaId: z.string().nullable().optional(),
+  providerId: providerIdSchema.nullable().optional(),
+  modelId: z.string().max(200).nullable().optional(),
+  presetId: z.string().nullable().optional(),
+});
+export type CreateChatInput = z.output<typeof createChatInputSchema>;
+
+export const chatSchema = z.object({
+  id: z.string(),
+  characterId: z.string(),
+  personaId: z.string().nullable(),
+  title: z.string(),
+  ribbon: z.string().nullable(),
+  status: chatStatusSchema,
+  providerId: providerIdSchema.nullable(),
+  modelId: z.string().nullable(),
+  presetId: z.string().nullable(),
+  lastMessageAt: z.string(),
+  lastMessagePreview: z.string().nullable(),
+  createdAt: z.string(),
+});
+export type Chat = z.output<typeof chatSchema>;
+
+export const chatSummarySchema = chatSchema.omit({ characterId: true }).extend({
+  characterName: z.string(),
+  characterAvatarPath: z.string().nullable(),
+});
+export type ChatSummary = z.output<typeof chatSummarySchema>;
+
+export const chatsListQuerySchema = z.object({
+  status: chatStatusSchema.optional(),
+  q: z.string().max(200).optional(),
+});
+
+/**
+ * Defaults-free PATCH (M1 §4.2 lesson): every key `.optional()`, ZERO
+ * `.default()` so a partial PATCH never clobbers untouched fields.
+ */
+export const chatPatchSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  ribbon: z.string().max(300).nullable().optional(),
+  personaId: z.string().nullable().optional(),
+  providerId: providerIdSchema.nullable().optional(),
+  modelId: z.string().max(200).nullable().optional(),
+  presetId: z.string().nullable().optional(),
+  status: chatStatusSchema.optional(),
+});
+export type ChatPatch = z.output<typeof chatPatchSchema>;
+
+export const deleteChatResponseSchema = z.object({ ok: z.literal(true) });
+
+// -- Variants & messages --------------------------------------------------------
+
+export const variantSchema = z.object({
+  id: z.string(),
+  variantIndex: z.number().int(),
+  isActive: z.boolean(),
+  text: z.string(),
+  finishReason: z.string().nullable(),
+  isError: z.boolean(),
+  error: chatErrorSchema.nullable(),
+  usage: tokenUsageSchema.nullable(),
+  createdAt: z.string(),
+});
+export type Variant = z.output<typeof variantSchema>;
+
+export const attachmentInfoSchema = z.object({
+  id: z.string(),
+  url: z.string(),
+  width: z.number().int().nullable(),
+  height: z.number().int().nullable(),
+  mimeType: z.string(),
+  originalName: z.string(),
+});
+export type AttachmentInfo = z.output<typeof attachmentInfoSchema>;
+
+/**
+ * One logical message position: assistant groups carry every variant with
+ * `activeVariantId` marking the swipe target; user messages carry a single
+ * variant (plan §3.1).
+ */
+export const chatMessageSchema = z.object({
+  id: z.string(),
+  seq: z.number().int(),
+  role: z.enum(messageRoles),
+  groupId: z.string().nullable(),
+  isGreeting: z.boolean(),
+  isError: z.boolean(),
+  error: chatErrorSchema.nullable(),
+  variants: z.array(variantSchema),
+  activeVariantId: z.string().nullable(),
+  attachments: z.array(attachmentInfoSchema),
+  usage: tokenUsageSchema.nullable(),
+  finishReason: z.string().nullable(),
+});
+export type ChatMessage = z.output<typeof chatMessageSchema>;
+
+export const chatDetailSchema = z.object({
+  chat: chatSchema,
+  character: characterSchema,
+  persona: personaSchema.nullable(),
+  messages: z.array(chatMessageSchema),
+});
+export type ChatDetail = z.output<typeof chatDetailSchema>;
+
+export const messageInputSchema = z.object({
+  text: z.string().min(1, 'Message text is required').max(32_000),
+  attachmentIds: z.array(z.string().min(1)).max(4).optional(),
+});
+export type MessageInput = z.output<typeof messageInputSchema>;
+
+/** Defaults-free edit body (`regenerateAfter` optional, no `.default()`). */
+export const editMessageInputSchema = z.object({
+  text: z.string().min(1, 'Message text is required').max(32_000),
+  regenerateAfter: z.boolean().optional(),
+});
+export type EditMessageInput = z.output<typeof editMessageInputSchema>;
+
+export const sendMessageResponseSchema = z.object({ message: chatMessageSchema });
+export type SendMessageResponse = z.output<typeof sendMessageResponseSchema>;
+
+export const editMessageResponseSchema = z.object({
+  message: chatMessageSchema,
+  truncatedSeq: z.number().int().nullable(),
+});
+export type EditMessageResponse = z.output<typeof editMessageResponseSchema>;
+
+export const deleteMessageResponseSchema = z.object({ deletedIds: z.array(z.string()) });
+export type DeleteMessageResponse = z.output<typeof deleteMessageResponseSchema>;
+
+export const activateVariantInputSchema = z.object({ variantId: z.string().min(1) });
+export const activateVariantResponseSchema = z.object({ message: chatMessageSchema });
+
+export const deleteMessageQuerySchema = z.object({ withReplies: z.string().optional() });
+
+// -- SSE generation events (plan §7.2) -----------------------------------------
+
+export const sseMetaEventSchema = z.object({
+  type: z.literal('meta'),
+  messageId: z.string(),
+  groupId: z.string(),
+  seq: z.number().int(),
+});
+export const sseDeltaEventSchema = z.object({
+  type: z.literal('delta'),
+  text: z.string(),
+});
+export const sseDoneEventSchema = z.object({
+  type: z.literal('done'),
+  finishReason: z.enum(['stop', 'length', 'aborted']),
+  usage: tokenUsageSchema.optional(),
+});
+export const sseErrorEventSchema = z.object({
+  type: z.literal('error'),
+  code: z.string(),
+  message: z.string(),
+  providerId: z.string().optional(),
+  modelId: z.string().optional(),
+  statusCode: z.number().optional(),
+  retryAfterMs: z.number().optional(),
+});
+
+export const sseEventSchema = z.discriminatedUnion('type', [
+  sseMetaEventSchema,
+  sseDeltaEventSchema,
+  sseDoneEventSchema,
+  sseErrorEventSchema,
+]);
+export type SseMetaEvent = z.output<typeof sseMetaEventSchema>;
+export type SseDeltaEvent = z.output<typeof sseDeltaEventSchema>;
+export type SseDoneEvent = z.output<typeof sseDoneEventSchema>;
+export type SseErrorEvent = z.output<typeof sseErrorEventSchema>;
+export type SseEvent = z.output<typeof sseEventSchema>;
+
+/** SSE endpoint request bodies are empty; declared for the client contract. */
+export const sseGenerateBodySchema = z.object({}).optional();

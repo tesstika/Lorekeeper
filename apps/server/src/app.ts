@@ -15,6 +15,8 @@ import { runMigrations } from './db/migrate';
 import { env } from './env';
 import { registerAttachmentRoutes } from './routes/attachments';
 import { registerCharacterRoutes } from './routes/characters';
+import { registerChatRoutes } from './routes/chats';
+import { registerGenerationRoutes } from './routes/generation';
 import { registerHealthRoutes } from './routes/health';
 import { registerPersonaRoutes } from './routes/personas';
 import { registerPresetRoutes } from './routes/presets';
@@ -111,6 +113,8 @@ export async function buildApp(options: BuildAppOptions = {}) {
   await registerCharacterRoutes(app);
   await registerPersonaRoutes(app);
   await registerAttachmentRoutes(app);
+  await registerChatRoutes(app);
+  await registerGenerationRoutes(app);
 
   let spaEnabled = false;
   if (existsSync(env.frontendDistDir)) {

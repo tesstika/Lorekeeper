@@ -61,4 +61,11 @@ export type StreamEvent =
       finishReason: 'stop' | 'length' | 'aborted' | 'tool_calls' | null;
       usage?: TokenUsage;
     }
-  | { type: 'error'; code: string; message: string; retryAfterMs?: number };
+  | {
+      type: 'error';
+      code: string;
+      message: string;
+      retryAfterMs?: number;
+      /** HTTP status preserved for the inline error bubble (M1 D-P1). */
+      statusCode?: number;
+    };

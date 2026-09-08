@@ -232,7 +232,15 @@ export async function* streamChatCompat(
           typeof chunk.error.message === 'string' && chunk.error.message
             ? chunk.error.message
             : 'Provider reported a mid-stream error';
-        yield { type: 'error', code: 'upstream_error', message };
+        // Preserve a numeric provider code (e.g. 429) for the error bubble
+        // (M1 D-P1: mid-stream frames must not flatten status away).
+        const statusCode = typeof chunk.error.code === 'number' ? chunk.error.code : undefined;
+        yield {
+          type: 'error',
+          code: 'upstream_error',
+          message,
+          ...(statusCode !== undefined ? { statusCode } : {}),
+        };
         return;
       }
       const choice = chunk.choices?.[0];
