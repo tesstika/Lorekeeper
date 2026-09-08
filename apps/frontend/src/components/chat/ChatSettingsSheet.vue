@@ -1,7 +1,7 @@
 <script setup lang="ts" vapor>
 import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import Sheet from '@/components/ui/BottomSheet.vue';
+import BottomSheet from '@/components/ui/BottomSheet.vue';
 import { useChatsStore } from '@/stores/chats';
 
 const props = defineProps<{ open: boolean }>();
@@ -56,7 +56,8 @@ async function removeChat(): Promise<void> {
 </script>
 
 <template>
-  <BottomSheet :open="props.open" title="Chronicle Settings" @close="emit('close')">
+  <!-- Caller-side gate: see NewChatSheet (vapor interop slot leak). -->
+  <BottomSheet v-if="props.open" :open="true" title="Chronicle Settings" @close="emit('close')">
     <label class="block text-[12px] font-medium text-on-surface-variant" for="chat-title">Title</label>
     <input
       id="chat-title"

@@ -159,6 +159,7 @@ function onKeydown(event: KeyboardEvent): void {
       <button
         v-if="streaming.isStreaming"
         type="button"
+        aria-label="Stop generating"
         class="flex items-center gap-1 rounded-full border border-outline-variant/40 bg-surface-container-high px-2.5 py-1 text-[11px] text-secondary transition-colors active:scale-95 hover:text-error"
         @click="streaming.stop()"
       >

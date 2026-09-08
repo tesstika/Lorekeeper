@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { api } from '@/api';
-import Composer from '@/components/chat/ChatComposer.vue';
+import ChatComposer from '@/components/chat/ChatComposer.vue';
 import ChatSettingsSheet from '@/components/chat/ChatSettingsSheet.vue';
 import ContextRibbon from '@/components/chat/ContextRibbon.vue';
 import MessageItem from '@/components/chat/MessageItem.vue';

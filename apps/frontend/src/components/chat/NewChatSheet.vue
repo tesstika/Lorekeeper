@@ -1,7 +1,7 @@
 <script setup lang="ts" vapor>
 import type { Character, Persona } from '@lorekeeper/shared';
 import { computed, ref } from 'vue';
-import Sheet from '@/components/ui/BottomSheet.vue';
+import BottomSheet from '@/components/ui/BottomSheet.vue';
 import { useCharactersStore } from '@/stores/characters';
 import { useChatsStore } from '@/stores/chats';
 import { useSettingsStore } from '@/stores/settings';
@@ -54,7 +54,9 @@ async function create(): Promise<void> {
 </script>
 
 <template>
-  <BottomSheet :open="props.open" title="Begin a New Tale" @close="emit('close')">
+  <!-- Caller-side gate: vapor interop leaks slot content past the child's own
+       v-if, so the sheet must not be created at all while closed. -->
+  <BottomSheet v-if="props.open" :open="true" title="Begin a New Tale" @close="emit('close')">
     <template v-if="step === 'character'">
       <p class="mb-3 text-[12px] text-on-surface-variant">Choose your companion for this chronicle.</p>
       <div v-if="charactersStore.characters.length === 0" class="py-6 text-center text-[13px] text-outline">

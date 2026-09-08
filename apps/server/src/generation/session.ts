@@ -170,9 +170,10 @@ function mapFinishReason(reason: string | null): 'stop' | 'length' | 'aborted' {
 }
 
 /**
- * Runs one generation against `writer`. All failures (config excluded — those
- * throw before the stream opens) become persisted error variants + an SSE
- * `error` event, so the client never waits on a dangling connection (D10).
+ * Runs one generation against `writer`. All failures become persisted error
+ * variants + an SSE `error` event, so the client never waits on a dangling
+ * connection (D10). Lookup-only failures (`not_found`) skip persistence since
+ * there is no thread to attach the error to.
  */
 export async function runGenerationSession(options: SessionOptions): Promise<SessionOutcome> {
   const { db, writer, chatId } = options;
@@ -180,7 +181,24 @@ export async function runGenerationSession(options: SessionOptions): Promise<Ses
   const idleTimeoutMs = options.idleTimeoutMs ?? IDLE_TIMEOUT_MS;
   const idleCheckMs = options.idleCheckMs ?? IDLE_CHECK_MS;
 
-  const failFast = (error: ChatError): SessionOutcome => {
+  let target: PendingTarget | null = null;
+
+  const failFast = (error: ChatError, persist: boolean): SessionOutcome => {
+    if (persist) {
+      try {
+        const row = createAssistantVariant(db, chatId, {
+          ...(target ? { groupId: target.groupId } : {}),
+        });
+        finalizeVariant(db, row.id, {
+          text: '',
+          finishReason: 'error',
+          isError: true,
+          error,
+        });
+      } catch {
+        // Nothing more we can do — still report the error to the client.
+      }
+    }
     writer.writeEvent({ type: 'error', ...error });
     writer.end();
     return { status: 'error', messageId: null, finishReason: 'error', error };
@@ -188,34 +206,39 @@ export async function runGenerationSession(options: SessionOptions): Promise<Ses
 
   const chat = getChatRow(db, chatId);
   if (!chat) {
-    return failFast({ code: 'not_found', message: `Chat ${chatId} does not exist` });
+    return failFast({ code: 'not_found', message: `Chat ${chatId} does not exist` }, false);
   }
 
   let config: ResolvedGenerationConfig;
-  let target: PendingTarget | null;
   try {
     config = resolveGenerationConfig(db, chat);
     target = prepareTarget(options);
   } catch (error) {
     if (error instanceof SessionConfigError) {
-      return failFast({ code: error.code, message: error.message });
+      return failFast(
+        { code: error.code, message: error.message },
+        error.code !== 'not_found' && error.code !== 'invalid_target',
+      );
     }
     throw error;
   }
 
   if (!options.keyStore.hasKey(config.providerId)) {
-    return failFast({
-      code: 'no_key',
-      message:
-        'No API key stored for the configured provider — add one in Settings → API Providers & Keys.',
-      providerId: config.providerId,
-      modelId: config.modelId,
-    });
+    return failFast(
+      {
+        code: 'no_key',
+        message:
+          'No API key stored for the configured provider — add one in Settings → API Providers & Keys.',
+        providerId: config.providerId,
+        modelId: config.modelId,
+      },
+      true,
+    );
   }
 
   const character = getCharacter(db, chat.characterId);
   if (!character) {
-    return failFast({ code: 'not_found', message: 'The chat character no longer exists' });
+    return failFast({ code: 'not_found', message: 'The chat character no longer exists' }, false);
   }
   const persona = config.personaId ? getPersona(db, config.personaId) : null;
   const preset = config.presetId ? getPreset(db, config.presetId) : null;
@@ -250,10 +273,13 @@ export async function runGenerationSession(options: SessionOptions): Promise<Ses
       keepLastNVariants: options.keepLastNVariants,
     });
   } catch (error) {
-    return failFast({
-      code: 'internal_error',
-      message: error instanceof Error ? error.message : 'Could not create the assistant variant',
-    });
+    return failFast(
+      {
+        code: 'internal_error',
+        message: error instanceof Error ? error.message : 'Could not create the assistant variant',
+      },
+      false,
+    );
   }
 
   activeGenerations.add(chatId);

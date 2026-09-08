@@ -29,8 +29,8 @@ export async function streamGeneration(
   signal: AbortSignal,
 ): Promise<void> {
   const path = targetMessageId
-    ? `/api/chats/${chatId}/messages/${targetMessageId}/regenerate`
-    : `/api/chats/${chatId}/generate`;
+    ? `/chats/${chatId}/messages/${targetMessageId}/regenerate`
+    : `/chats/${chatId}/generate`;
   const response = await fetch(`/api${path}`, { method: 'POST', signal });
   if (!response.ok) await raiseApiError(response);
   if (!response.body) throw new ApiError('Empty stream body', 502, 'empty_stream');
