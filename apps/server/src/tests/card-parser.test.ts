@@ -218,6 +218,20 @@ describe('buildCardExport', () => {
     expect(reimportedV2).toEqual(firstV2);
   });
 
+  it('reaches the round-trip fixpoint in one cycle for minimal cards', () => {
+    const minimal = parseCard({
+      spec: 'chara_card_v2',
+      spec_version: '2.0',
+      // No creator/character_version keys; carries the mandatory extensions object.
+      data: { name: 'Minimalist', description: 'No creator keys.', extensions: {} },
+    });
+    const exported = buildCardExport(characterFromParsed(minimal), 'v2');
+    // export(import(card)) must re-import to the exact same parsed shape…
+    expect(parseCard(exported)).toEqual(minimal);
+    // …and exporting that re-import must be byte-identical (fixpoint).
+    expect(buildCardExport(characterFromParsed(parseCard(exported)), 'v2')).toEqual(exported);
+  });
+
   it('exports a from-scratch character without envelope residue', () => {
     const card = buildCardExport(characterFromParsed(parseCard(V1_CARD)), 'v2');
     const data = card.data as Record<string, unknown>;

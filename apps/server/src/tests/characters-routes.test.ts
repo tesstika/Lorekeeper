@@ -309,6 +309,50 @@ describe('card import/export routes', () => {
     });
   });
 
+  it("accepts a legal card body larger than Fastify's old 1 MiB default bodyLimit", async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/characters/import',
+      payload: {
+        spec: 'chara_card_v2',
+        spec_version: '2.0',
+        data: {
+          name: 'Lore-Heavy Sage',
+          description: 'A'.repeat(200_000),
+          personality: 'B'.repeat(200_000),
+          backstory: 'C'.repeat(200_000),
+          scenario: 'D'.repeat(200_000),
+          first_mes: 'E'.repeat(200_000),
+          mes_example: 'F'.repeat(200_000),
+        },
+      },
+    });
+    expect(response.statusCode).toBe(201);
+    expect(response.json().character).toMatchObject({ name: 'Lore-Heavy Sage' });
+  });
+
+  it('rejects oversized card fields with a clean 400 and persists nothing', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/characters/import',
+      payload: {
+        spec: 'chara_card_v2',
+        spec_version: '2.0',
+        data: {
+          name: 'Oversized',
+          description: 'A'.repeat(200_001),
+        },
+      },
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json().code).toBe('invalid_card');
+    expect(response.json().message).toContain('field limits');
+    // The half-persisted-import failure mode (insert succeeded, response
+    // serialization failed) must not happen — no row exists.
+    const list = await app.inject({ method: 'GET', url: '/api/characters' });
+    expect(list.json().some((c: { name: string }) => c.name === 'Oversized')).toBe(false);
+  });
+
   it('rejects invalid cards with a 400 invalid_card envelope', async () => {
     const noName = await app.inject({
       method: 'POST',

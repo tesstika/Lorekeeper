@@ -70,7 +70,11 @@ export async function registerCharacterRoutes(app: AppInstance): Promise<void> {
     async (request, reply) => {
       try {
         const card = parseCard(request.body);
-        const character = createCharacter(app.db, {
+        // Enforce the shared field caps before insert: the raw-card body schema
+        // is unbounded, and a row that violates characterSchema would otherwise
+        // fail response serialization AFTER the insert (500 + half-persisted
+        // import). Oversized/malformed cards get a clean 400 invalid_card.
+        const input = characterInputSchema.safeParse({
           name: card.name,
           description: card.description,
           personality: card.personality,
@@ -84,6 +88,13 @@ export async function registerCharacterRoutes(app: AppInstance): Promise<void> {
           alternateGreetings: card.alternateGreetings,
           extensions: card.extensions,
         });
+        if (!input.success) {
+          const issue = input.error.issues[0];
+          throw new CardParseError(
+            `Card field limits exceeded: ${issue?.path.join('.') ?? 'body'} — ${issue?.message ?? 'invalid'}`,
+          );
+        }
+        const character = createCharacter(app.db, input.data);
         return reply.code(201).send({ character, detectedFormat: card.format });
       } catch (error) {
         if (error instanceof CardParseError) {

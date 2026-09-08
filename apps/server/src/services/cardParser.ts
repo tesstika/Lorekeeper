@@ -193,8 +193,6 @@ export function buildCardExport(
     post_history_instructions: character.jailbreak,
     alternate_greetings: [...character.alternateGreetings],
     tags: [...character.tags],
-    creator: '',
-    character_version: '',
     extensions: { ...envelope.extensions },
   };
   // Unmapped metadata (creator, character_book, assets, group_only_greetings…)

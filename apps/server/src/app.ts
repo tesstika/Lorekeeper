@@ -32,7 +32,14 @@ export async function buildApp(options: BuildAppOptions = {}) {
   const mediaDir = path.join(dataDir, 'media');
   mkdirSync(mediaDir, { recursive: true });
 
-  const app = Fastify({ logger: { level: 'warn' } }).withTypeProvider<ZodTypeProvider>();
+  const app = Fastify({
+    logger: { level: 'warn' },
+    // Fastify's 1 MiB default rejects schema-legal card imports (the shared
+    // prose schemas allow ~3.6 MB across 18 fields; real SillyTavern cards
+    // with large character_books exceed 1 MB). 8 MB matches the default
+    // image cap family; zod caps still bound per-field abuse.
+    bodyLimit: 8 * 1024 * 1024,
+  }).withTypeProvider<ZodTypeProvider>();
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
 
