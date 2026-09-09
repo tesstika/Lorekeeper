@@ -21,6 +21,7 @@ import type {
   Preset,
   PresetCreateInput,
   PresetPatch,
+  PromptPreviewResponse,
   ProviderId,
   ProviderInfo,
   ProviderModelsResponse,
@@ -126,6 +127,8 @@ export const api = {
     return request<ChatSummary[]>('GET', `/chats${suffix}`);
   },
   getChat: (id: string) => request<ChatDetail>('GET', `/chats/${id}`),
+  getPromptPreview: (id: string) =>
+    request<PromptPreviewResponse>('GET', `/chats/${id}/prompt-preview`),
   createChat: (input: CreateChatInput) => request<ChatDetail>('POST', '/chats', input),
   updateChat: (id: string, patch: ChatPatch) => request<Chat>('PATCH', `/chats/${id}`, patch),
   deleteChat: (id: string) => request<{ ok: true }>('DELETE', `/chats/${id}`),

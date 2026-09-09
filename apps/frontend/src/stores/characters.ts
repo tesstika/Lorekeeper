@@ -24,6 +24,12 @@ export const useCharactersStore = defineStore('characters', () => {
   const personas = ref<Persona[]>([]);
   const charactersLoaded = ref(false);
   const personasLoaded = ref(false);
+  // Unified loading/error states (M4): pages render skeleton pulses while a
+  // first fetch is in flight and an error banner with Retry when it failed.
+  const charactersLoading = ref(false);
+  const charactersError = ref<string | null>(null);
+  const personasLoading = ref(false);
+  const personasError = ref<string | null>(null);
 
   function upsertCharacter(character: Character): void {
     const index = characters.value.findIndex((c) => c.id === character.id);
@@ -59,21 +65,33 @@ export const useCharactersStore = defineStore('characters', () => {
 
   async function loadCharacters(force = false): Promise<void> {
     if (charactersLoaded.value && !force) return;
+    charactersLoading.value = true;
     try {
       characters.value = await api.getCharacters();
       charactersLoaded.value = true;
+      charactersError.value = null;
     } catch (error) {
-      ui.notify(describeApiError(error), 'error');
+      const message = describeApiError(error);
+      charactersError.value = message;
+      ui.notify(message, 'error');
+    } finally {
+      charactersLoading.value = false;
     }
   }
 
   async function loadPersonas(force = false): Promise<void> {
     if (personasLoaded.value && !force) return;
+    personasLoading.value = true;
     try {
       personas.value = await api.getPersonas();
       personasLoaded.value = true;
+      personasError.value = null;
     } catch (error) {
-      ui.notify(describeApiError(error), 'error');
+      const message = describeApiError(error);
+      personasError.value = message;
+      ui.notify(message, 'error');
+    } finally {
+      personasLoading.value = false;
     }
   }
 
@@ -212,6 +230,10 @@ export const useCharactersStore = defineStore('characters', () => {
     personas,
     charactersLoaded,
     personasLoaded,
+    charactersLoading,
+    charactersError,
+    personasLoading,
+    personasError,
     loadCharacters,
     loadPersonas,
     ensureCharacter,

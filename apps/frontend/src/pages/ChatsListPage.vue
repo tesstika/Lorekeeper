@@ -3,6 +3,9 @@ import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import NewChatSheet from '@/components/chat/NewChatSheet.vue';
 import BottomNav from '@/components/ui/BottomNav.vue';
+import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
+import ErrorBanner from '@/components/ui/ErrorBanner.vue';
+import ToastHost from '@/components/ui/ToastHost.vue';
 import { useCharactersStore } from '@/stores/characters';
 import { useChatsStore } from '@/stores/chats';
 import { useSettingsStore } from '@/stores/settings';
@@ -118,11 +121,43 @@ function openChat(id: string): void {
     </div>
 
     <main class="flex-1 space-y-2.5 px-5 pt-2">
-      <div v-if="filteredChats.length === 0" class="flex flex-col items-center gap-1 pt-24 text-center">
+      <!-- First-fetch skeleton pulse -->
+      <template v-if="chatsStore.listLoading && !chatsStore.loaded">
+        <div
+          v-for="index in 3"
+          :key="index"
+          class="flex animate-pulse items-start gap-3 rounded-xl border border-outline-variant/15 bg-surface-container-low p-3"
+          aria-hidden="true"
+        >
+          <div class="size-[52px] flex-shrink-0 rounded-full bg-surface-container-high" />
+          <div class="flex-1 space-y-2 py-1">
+            <div class="h-3.5 w-2/5 rounded bg-surface-container-high" />
+            <div class="h-2.5 w-1/4 rounded bg-surface-container" />
+            <div class="h-2.5 w-3/5 rounded bg-surface-container" />
+          </div>
+        </div>
+      </template>
+
+      <!-- Load failure with retry -->
+      <ErrorBanner
+        v-else-if="chatsStore.listError && chatsStore.list.length === 0"
+        :message="`Could not load your library — ${chatsStore.listError}`"
+        @retry="chatsStore.loadList(true)"
+      />
+
+      <div v-else-if="filteredChats.length === 0" class="flex flex-col items-center gap-1 pt-24 text-center">
         <p class="font-serif text-lg italic text-on-surface-variant/85">
-          {{ query ? 'No chronicles match your search.' : 'Your library is empty.' }}
+          {{ query ? 'No chronicles match your search.' : 'No chronicles found — begin a new tale.' }}
         </p>
         <p class="text-[13px] text-outline">Begin your first tale with a character.</p>
+        <button
+          v-if="!query"
+          type="button"
+          class="mt-3 rounded-full bg-primary-container px-4 py-2 text-[13px] font-semibold text-on-primary-container transition active:scale-95"
+          @click="newChatOpen = true"
+        >
+          Begin a new tale
+        </button>
       </div>
 
       <article
@@ -188,5 +223,7 @@ function openChat(id: string): void {
     />
 
     <BottomNav />
+    <ToastHost />
+    <ConfirmDialog />
   </div>
 </template>

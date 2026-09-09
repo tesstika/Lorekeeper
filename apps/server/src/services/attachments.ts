@@ -1,6 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { and, eq, isNull, lt } from 'drizzle-orm';
+import type { LorekeeperDb } from '../db/client';
+import { attachments, characters, personas } from '../db/schema';
 
 export type SniffedImageType = 'png' | 'jpeg' | 'webp' | 'gif';
 
@@ -167,4 +170,90 @@ export function storeImage(dataDir: string, buffer: Buffer, sniffed: SniffedImag
     sniffed,
     sizeBytes: buffer.length,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Orphan GC sweep (M4, audit debt D-C1 / D-T4): pending uploads abandoned
+// before they were linked to a message, and media files left behind by
+// replaced avatars, are pruned on boot. Message-linked attachments cascade
+// with their messages on delete; this sweep only ever touches rows/files
+// nothing references anymore.
+// ---------------------------------------------------------------------------
+
+export interface OrphanCleanupResult {
+  /** Pending (`messageId IS NULL`) attachment rows pruned from the DB. */
+  prunedRows: number;
+  /** Unreferenced files deleted from `data/media/`. */
+  deletedFiles: number;
+}
+
+function normalizeMediaPath(value: string): string {
+  return path.normalize(value).replaceAll('\\', '/').toLowerCase();
+}
+
+/**
+ * Runs the full orphan sweep:
+ *  1. Prune `attachments` rows with `messageId IS NULL` older than `maxAgeMs`
+ *     (default 24 h) — abandoned draft uploads.
+ *  2. Collect every media path still referenced by `attachments.filePath`,
+ *     `characters.avatarPath` or `personas.avatarPath`.
+ *  3. Delete files in `data/media/` that no row references.
+ *
+ * Synchronous by design (SQLite + a flat directory); callers on the boot path
+ * should defer it off the critical startup section. Individual unlink
+ * failures (locked files on Windows) are skipped, not fatal.
+ */
+export function cleanupOrphanMedia(
+  db: LorekeeperDb,
+  dataDir: string,
+  options: { maxAgeMs?: number; now?: number } = {},
+): OrphanCleanupResult {
+  const maxAgeMs = options.maxAgeMs ?? 24 * 60 * 60 * 1000;
+  const cutoff = new Date((options.now ?? Date.now()) - maxAgeMs).toISOString();
+
+  // 1. Prune stale pending attachment rows (draft uploads never linked).
+  const stale = db
+    .select({ id: attachments.id })
+    .from(attachments)
+    .where(and(isNull(attachments.messageId), lt(attachments.createdAt, cutoff)))
+    .all();
+  let prunedRows = 0;
+  for (const row of stale) {
+    db.delete(attachments).where(eq(attachments.id, row.id)).run();
+    prunedRows++;
+  }
+
+  // 2. Referenced-path set — computed AFTER pruning, so a pruned draft row's
+  //    file becomes collectable in the same sweep.
+  const referenced = new Set<string>();
+  for (const row of db.select({ filePath: attachments.filePath }).from(attachments).all()) {
+    referenced.add(normalizeMediaPath(row.filePath));
+  }
+  for (const row of db.select({ avatarPath: characters.avatarPath }).from(characters).all()) {
+    if (row.avatarPath) referenced.add(normalizeMediaPath(row.avatarPath));
+  }
+  for (const row of db.select({ avatarPath: personas.avatarPath }).from(personas).all()) {
+    if (row.avatarPath) referenced.add(normalizeMediaPath(row.avatarPath));
+  }
+
+  // 3. Sweep the flat media directory for unreferenced files.
+  const mediaDir = path.join(dataDir, 'media');
+  let deletedFiles = 0;
+  let entries: string[] = [];
+  try {
+    entries = readdirSync(mediaDir);
+  } catch {
+    return { prunedRows, deletedFiles }; // no media dir yet → nothing on disk
+  }
+  for (const entry of entries) {
+    const normalized = normalizeMediaPath(path.join('media', entry));
+    if (referenced.has(normalized)) continue;
+    try {
+      rmSync(path.join(mediaDir, entry), { force: true });
+      deletedFiles++;
+    } catch {
+      // Locked/permission-denied file: skip; the next sweep retries.
+    }
+  }
+  return { prunedRows, deletedFiles };
 }

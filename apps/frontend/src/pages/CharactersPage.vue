@@ -7,6 +7,7 @@ import ImportCardButton from '@/components/characters/ImportCardButton.vue';
 import PersonaCard from '@/components/characters/PersonaCard.vue';
 import BottomNav from '@/components/ui/BottomNav.vue';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
+import ErrorBanner from '@/components/ui/ErrorBanner.vue';
 import ToastHost from '@/components/ui/ToastHost.vue';
 import { useCharactersStore } from '@/stores/characters';
 import { useUiStore } from '@/stores/ui';
@@ -240,7 +241,30 @@ function toggleSearch(): void {
 
     <main class="flex flex-1 flex-col gap-3 px-5">
       <template v-if="tab === 'characters'">
-        <div v-if="visibleCharacters.length > 0" class="grid grid-cols-2 gap-3.5 sm:gap-4">
+        <!-- First-fetch skeleton pulse -->
+        <div
+          v-if="store.charactersLoading && !store.charactersLoaded"
+          class="grid grid-cols-2 gap-3.5 sm:gap-4"
+          aria-hidden="true"
+        >
+          <div
+            v-for="index in 4"
+            :key="index"
+            class="flex animate-pulse flex-col items-center gap-3 rounded-xl border border-outline-variant/20 bg-surface-container-low p-4"
+          >
+            <div class="size-16 rounded-full bg-surface-container-high" />
+            <div class="h-3 w-3/4 rounded bg-surface-container-high" />
+            <div class="h-2.5 w-1/2 rounded bg-surface-container" />
+          </div>
+        </div>
+
+        <ErrorBanner
+          v-else-if="store.charactersError && store.characters.length === 0"
+          :message="`Could not load characters — ${store.charactersError}`"
+          @retry="store.loadCharacters(true)"
+        />
+
+        <div v-else-if="visibleCharacters.length > 0" class="grid grid-cols-2 gap-3.5 sm:gap-4">
           <CharacterCard
             v-for="character in visibleCharacters"
             :key="character.id"
@@ -279,7 +303,21 @@ function toggleSearch(): void {
       </template>
 
       <template v-else>
-        <div v-if="visiblePersonas.length > 0" class="flex flex-col gap-3">
+        <div
+          v-if="store.personasLoading && !store.personasLoaded"
+          class="flex animate-pulse flex-col gap-3"
+          aria-hidden="true"
+        >
+          <div v-for="index in 2" :key="index" class="h-16 rounded-xl border border-outline-variant/20 bg-surface-container-low" />
+        </div>
+
+        <ErrorBanner
+          v-else-if="store.personasError && store.personas.length === 0"
+          :message="`Could not load personas — ${store.personasError}`"
+          @retry="store.loadPersonas(true)"
+        />
+
+        <div v-else-if="visiblePersonas.length > 0" class="flex flex-col gap-3">
           <PersonaCard
             v-for="persona in visiblePersonas"
             :key="persona.id"

@@ -10,6 +10,7 @@ import {
   isVisionModel,
   modalityUnknown,
 } from '@/utils/model-format';
+import { useOverlayA11y } from '@/utils/overlayA11y';
 import IconBrain from '~icons/lucide/brain';
 import IconCheck from '~icons/lucide/check';
 import IconChevronDown from '~icons/lucide/chevron-down';
@@ -44,6 +45,15 @@ const fetchedAt = computed(() => store.activeProviderCatalog?.fetchedAt ?? null)
 
 const manualModelId = ref('');
 const manualDirty = computed(() => manualModelId.value.trim() !== (store.activeModelId ?? ''));
+
+// M4 a11y: the model-library modal traps focus, closes on Escape and
+// restores focus to its trigger. (Vapor cannot bind template refs — the
+// overlay is marked by data attribute.)
+const { token: libraryToken } = useOverlayA11y(() => libraryOpen.value, {
+  onEscape: () => {
+    libraryOpen.value = false;
+  },
+});
 
 watch(libraryOpen, (open) => {
   if (!open) return;
@@ -229,6 +239,7 @@ function contextTag(model: ModelInfo): string | null {
     <!-- Model library modal -->
     <div
       v-if="libraryOpen"
+      :data-lk-overlay="libraryToken"
       class="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"

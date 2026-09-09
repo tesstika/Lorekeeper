@@ -71,6 +71,8 @@ export const chats = sqliteTable('chats', {
   providerId: text().$type<'openrouter' | 'unorouter'>(),
   modelId: text(),
   presetId: text().references(() => presets.id, { onDelete: 'set null' }),
+  // Per-chat context budget override (M4, plan §6.2); null → global defaults.
+  contextBudgetTokens: integer(),
   lastMessageAt: text().notNull(),
   lastMessagePreview: text(),
   createdAt: text().notNull(),

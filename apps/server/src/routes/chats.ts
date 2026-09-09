@@ -14,10 +14,14 @@ import {
   editMessageInputSchema,
   editMessageResponseSchema,
   messageInputSchema,
+  type PromptPreviewContentPart,
+  promptPreviewResponseSchema,
   sendMessageResponseSchema,
 } from '@lorekeeper/shared';
 import { z } from 'zod';
-import { isGenerating } from '../generation/session';
+import { isGenerating } from '../generation/config';
+import { loadPromptInputs } from '../generation/promptInputs';
+import { SessionConfigError } from '../generation/session';
 import {
   ChatRepoError,
   createChat,
@@ -43,6 +47,22 @@ import { httpError } from '../util/http';
 
 const idParams = z.object({ id: z.string() });
 const messageParams = z.object({ id: z.string(), messageId: z.string() });
+
+/**
+ * D-T2 (M4 audit debt): message mutations during an active generation would
+ * let a delete yank the in-flight variant out from under `finalizeVariant`
+ * (deadlocking the stream with no terminal event). The UI prevents this; the
+ * server now does too.
+ */
+function assertNotGenerating(chatId: string): void {
+  if (isGenerating(chatId)) {
+    throw httpError(
+      409,
+      'generation_in_progress',
+      'Cannot modify messages while generation is active',
+    );
+  }
+}
 
 function messagePayload(grouped: ReturnType<typeof groupMessages>[number]): ChatMessage {
   return grouped;
@@ -149,6 +169,7 @@ export async function registerChatRoutes(app: AppInstance): Promise<void> {
     },
     async (request, reply) => {
       assertChatExists(app, request.params.id);
+      assertNotGenerating(request.params.id);
       try {
         const { message } = appendUserMessage(app.db, request.params.id, request.body);
         return reply.code(201).send({ message: messageOf(app, request.params.id, message.id) });
@@ -169,6 +190,7 @@ export async function registerChatRoutes(app: AppInstance): Promise<void> {
     },
     async (request) => {
       assertChatExists(app, request.params.id);
+      assertNotGenerating(request.params.id);
       try {
         const { updated, truncatedSeq } = editMessage(
           app.db,
@@ -197,6 +219,7 @@ export async function registerChatRoutes(app: AppInstance): Promise<void> {
     },
     async (request) => {
       assertChatExists(app, request.params.id);
+      assertNotGenerating(request.params.id);
       const withReplies = request.query.withReplies !== '0';
       try {
         return deleteMessage(app.db, request.params.id, request.params.messageId, withReplies);
@@ -237,6 +260,74 @@ export async function registerChatRoutes(app: AppInstance): Promise<void> {
       }
     },
   );
+
+  app.get(
+    '/api/chats/:id/prompt-preview',
+    {
+      schema: {
+        params: idParams,
+        response: { 200: promptPreviewResponseSchema },
+      },
+    },
+    async (request) => {
+      const chat = getChatRow(app.db, request.params.id);
+      if (!chat) {
+        throw httpError(404, 'not_found', `Chat ${request.params.id} does not exist`);
+      }
+      // Config failures surface as clean JSON errors: no model/provider set →
+      // 400 `no_model_configured`; vanished chat character → 404.
+      let preview: ReturnType<typeof loadPromptInputs>;
+      try {
+        preview = loadPromptInputs(app.db, app.dataDir, chat);
+      } catch (error) {
+        if (error instanceof SessionConfigError) {
+          if (error.code === 'not_found') {
+            throw httpError(404, error.code, error.message);
+          }
+          throw httpError(400, error.code, error.message);
+        }
+        throw error;
+      }
+      return {
+        system: preview.assembled.systemText,
+        trailing: preview.assembled.trailingSystemText,
+        history: preview.assembled.historyMessages.map((message) => ({
+          role: message.role,
+          content: previewContentOf(message.content),
+        })),
+        warnings: preview.assembled.warnings,
+        budget: preview.assembled.historyBudgetTokens,
+        estimatedTokens: preview.assembled.usedTokens,
+        droppedTurnsCount: preview.assembled.droppedTurnCount,
+        providerId: preview.config.providerId,
+        modelId: preview.config.modelId,
+        modelContextLength: preview.config.modelInfo?.contextLength ?? null,
+      };
+    },
+  );
+}
+
+/**
+ * Debug responses never ship base64 payloads: inline images collapse to a
+ * placeholder stating their decoded size, so the viewer stays fast while
+ * remaining honest about what rides the request.
+ */
+function previewContentOf(
+  content: string | PromptPreviewContentPart[],
+): string | PromptPreviewContentPart[] {
+  if (typeof content === 'string') return content;
+  return content.map((part) => {
+    if (part.type !== 'image_url') return part;
+    const match = /^data:([^;,]+);base64,(.*)$/s.exec(part.imageUrl.url);
+    if (!match) return part;
+    const bytes = Math.floor(((match[2]?.length ?? 0) * 3) / 4);
+    return {
+      type: 'image_url' as const,
+      imageUrl: {
+        url: `data:${match[1]};base64,<inline image omitted — ${bytes.toLocaleString('en-US')} bytes>`,
+      },
+    };
+  });
 }
 
 function assertChatExists(app: AppInstance, chatId: string): void {

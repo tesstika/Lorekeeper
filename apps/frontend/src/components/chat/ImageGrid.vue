@@ -1,9 +1,12 @@
 <script setup lang="ts" vapor>
 import type { AttachmentInfo } from '@lorekeeper/shared';
-import { useUiStore } from '@/stores/ui';
+import { ref } from 'vue';
+import ImageLightbox from './ImageLightbox.vue';
 
 defineProps<{ attachments: AttachmentInfo[] }>();
-const ui = useUiStore();
+
+/** The attachment shown in the full-screen lightbox (null = closed). */
+const activeAttachment = ref<AttachmentInfo | null>(null);
 </script>
 
 <template>
@@ -12,9 +15,9 @@ const ui = useUiStore();
       v-for="attachment in attachments"
       :key="attachment.id"
       type="button"
-      class="group relative overflow-hidden rounded-lg border border-outline-variant/40 bg-surface-container"
-      :aria-label="`Attached image ${attachment.originalName}`"
-      @click="ui.notify(`Attachment: ${attachment.originalName} (${attachment.mimeType})`, 'info')"
+      class="group relative overflow-hidden rounded-lg border border-outline-variant/40 bg-surface-container transition-colors hover:border-primary/50"
+      :aria-label="`View image ${attachment.originalName}`"
+      @click="activeAttachment = attachment"
     >
       <img
         :src="attachment.url"
@@ -23,5 +26,12 @@ const ui = useUiStore();
         loading="lazy"
       />
     </button>
+
+    <!-- Lightbox (D-T7): click thumbnail → full-screen viewer. -->
+    <ImageLightbox
+      v-if="activeAttachment"
+      :attachment="activeAttachment"
+      @close="activeAttachment = null"
+    />
   </div>
 </template>

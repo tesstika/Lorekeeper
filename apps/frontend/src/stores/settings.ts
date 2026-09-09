@@ -37,6 +37,8 @@ export const useSettingsStore = defineStore('settings', () => {
   const modelCatalog = ref<Partial<Record<ProviderId, ProviderModelsResponse>>>({});
   const loaded = ref(false);
   const loading = ref(false);
+  /** Unified error state (M4): surfaces a Retry banner on the Settings page. */
+  const loadError = ref<string | null>(null);
 
   /** The preset currently being tuned in the Sampling section (working copy). */
   const DRAFT_PRESET = presetInputSchema.parse({ name: 'Untitled' });
@@ -86,9 +88,12 @@ export const useSettingsStore = defineStore('settings', () => {
       providers.value = providerList;
       presets.value = presetList;
       loaded.value = true;
+      loadError.value = null;
       syncWorkingPreset();
     } catch (error) {
-      ui.notify(describeApiError(error), 'error');
+      const message = describeApiError(error);
+      loadError.value = message;
+      ui.notify(message, 'error');
     } finally {
       loading.value = false;
     }
@@ -252,6 +257,7 @@ export const useSettingsStore = defineStore('settings', () => {
     modelCatalog,
     loaded,
     loading,
+    loadError,
     workingPreset,
     newPresetName,
     globalDefaults,

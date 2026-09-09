@@ -214,10 +214,19 @@ export async function* streamChatCompat(
   let usage: TokenUsage | undefined;
   let finishReason: 'stop' | 'length' | 'aborted' | 'tool_calls' | null = null;
   let aborted = false;
+  // D-T1 policy (M4): a provider FIN without a terminal frame is a silent
+  // truncation, not a completion. A turn counts as complete when the provider
+  // sent a finish_reason chunk (or the [DONE] marker); anything else ends the
+  // stream as an honest `connection_closed` error so partial text persists
+  // with an error bubble instead of reading as a clean `stop`.
+  let sawDoneMarker = false;
 
   try {
     for await (const payload of parseSsePayloads(response.body)) {
-      if (payload === '[DONE]') break;
+      if (payload === '[DONE]') {
+        sawDoneMarker = true;
+        break;
+      }
       let chunk: ChatCompletionChunk;
       try {
         chunk = JSON.parse(payload) as ChatCompletionChunk;
@@ -274,7 +283,15 @@ export async function* streamChatCompat(
     yield { type: 'done', finishReason: 'aborted', ...(usage ? { usage } : {}) };
     return;
   }
-  yield { type: 'done', finishReason: finishReason ?? 'stop', ...(usage ? { usage } : {}) };
+  // A finish_reason chunk (even without [DONE]) still marks a completed turn.
+  if (finishReason !== null || sawDoneMarker) {
+    yield { type: 'done', finishReason: finishReason ?? 'stop', ...(usage ? { usage } : {}) };
+    return;
+  }
+  throw new ProviderError(
+    'connection_closed',
+    'The provider closed the stream before the reply completed — partial text was kept.',
+  );
 }
 
 // ---------------------------------------------------------------------------

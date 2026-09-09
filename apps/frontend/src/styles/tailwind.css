@@ -269,7 +269,10 @@ input[type="range"].lk-range::-moz-range-track {
   }
 }
 
-/* Reduced motion: static caret, no fades, no blink (§6.7 accessibility). */
+/* Reduced motion: static caret, no fades, no blink (§6.7 accessibility).
+   The global collapse below also covers everything added in M4 — the header
+   model-pill pulse, skeleton pulses, delivered dot and any sheet/modal
+   transition — so motion-sensitive users get an instant, static UI. */
 @media (prefers-reduced-motion: reduce) {
   .lk-streaming .lk-fade-in {
     animation: none;
@@ -280,5 +283,17 @@ input[type="range"].lk-range::-moz-range-track {
   .lk-delivered {
     animation: none;
     opacity: 1;
+  }
+  *,
+  *::before,
+  *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: the reduced-motion collapse must beat every animation/transition */
+    animation-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: see above */
+    animation-iteration-count: 1 !important;
+    /* biome-ignore lint/complexity/noImportantStyles: see above */
+    transition-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: see above */
+    scroll-behavior: auto !important;
   }
 }

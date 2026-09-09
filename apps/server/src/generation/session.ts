@@ -1,24 +1,29 @@
-import type { ChatError, ModelInfo, TokenUsage } from '@lorekeeper/shared';
+import type { ChatError, TokenUsage } from '@lorekeeper/shared';
 import type { LorekeeperDb } from '../db/client';
-import { buildAssembledPrompt } from '../prompt/assemble';
-import type { PromptHistoryMessage } from '../prompt/systemPrompt';
 import { getProvider } from '../providers';
 import { ProviderError } from '../providers/types';
-import { getCharacter } from '../services/charactersRepo';
-import { type ChatRow, getChatRow } from '../services/chatsRepo';
 import type { KeyStore } from '../services/keyStore';
 import {
   createAssistantVariant,
   finalizeVariant,
-  getAttachmentRows,
   getMessageRow,
-  listMessageRows,
   type MessageRow,
 } from '../services/messagesRepo';
-import { getPersona } from '../services/personasRepo';
-import { getPreset } from '../services/presetsRepo';
-import { getGlobalDefaults, getModelCache, getPromptTemplate } from '../services/settingsRepo';
 import type { SseWriter } from './sseWriter';
+
+// Single-flight state + config resolution live in `config.ts` so the prompt
+// preview route shares the exact same logic (M4). Re-exported here for the
+// established import surface.
+export { isGenerating, resolveGenerationConfig, SessionConfigError } from './config';
+
+import { getChatRow } from '../services/chatsRepo';
+import {
+  activeGenerations,
+  type ResolvedGenerationConfig,
+  resolveGenerationConfig,
+  SessionConfigError,
+} from './config';
+import { loadPromptInputs } from './promptInputs';
 
 // ---------------------------------------------------------------------------
 // Generation session (plan §5, §6.7, §6.8, §7.2):
@@ -29,59 +34,6 @@ import type { SseWriter } from './sseWriter';
 export const HEARTBEAT_MS = 15_000;
 export const IDLE_TIMEOUT_MS = 30_000;
 export const IDLE_CHECK_MS = 5_000;
-
-/** One active generation per chat (D1 control plane; 409 otherwise). */
-const activeGenerations = new Set<string>();
-
-export function isGenerating(chatId: string): boolean {
-  return activeGenerations.has(chatId);
-}
-
-/** Configuration failures resolved BEFORE the SSE stream opens → clean HTTP errors. */
-export class SessionConfigError extends Error {
-  readonly code: string;
-  constructor(code: string, message: string) {
-    super(message);
-    this.name = 'SessionConfigError';
-    this.code = code;
-  }
-}
-
-export interface ResolvedGenerationConfig {
-  providerId: 'openrouter' | 'unorouter';
-  modelId: string;
-  presetId: string | null;
-  personaId: string | null;
-  modelInfo: ModelInfo | null;
-  hasKey: boolean;
-}
-
-/**
- * Effective overrides (plan §4.2): chat.providerId ?? globalDefaults.providerId
- * (same for model). Zero defaults → explicit 400 `no_model_configured` (D-S1).
- */
-export function resolveGenerationConfig(db: LorekeeperDb, chat: ChatRow): ResolvedGenerationConfig {
-  const defaults = getGlobalDefaults(db);
-  const providerId = chat.providerId ?? defaults.providerId;
-  const modelId = chat.modelId ?? defaults.modelId;
-  if (!providerId) {
-    throw new SessionConfigError(
-      'no_model_configured',
-      'No provider configured — set a provider in Settings → Intelligence Engine or as a chat override.',
-    );
-  }
-  if (!modelId) {
-    throw new SessionConfigError(
-      'no_model_configured',
-      'No model configured — pick a model in Settings → Intelligence Engine or as a chat override.',
-    );
-  }
-  const cache = getModelCache(db, providerId);
-  const modelInfo = cache?.models.find((model) => model.id === modelId) ?? null;
-  const presetId = chat.presetId ?? defaults.presetId;
-  const personaId = chat.personaId ?? defaults.personaId;
-  return { providerId, modelId, presetId, personaId, modelInfo, hasKey: false };
-}
 
 export interface SessionOptions {
   db: LorekeeperDb;
@@ -123,18 +75,6 @@ function prepareTarget(options: SessionOptions): PendingTarget | null {
     );
   }
   return { row: target, seq: target.seq, groupId: target.groupId };
-}
-
-/** Active variants with non-empty text only (history inclusion rule, §3.1). */
-function collectHistory(
-  options: SessionOptions,
-  target: PendingTarget | null,
-): PromptHistoryMessage[] {
-  const rows = listMessageRows(options.db, options.chatId);
-  const cutoffSeq = target ? target.seq : Number.MAX_SAFE_INTEGER;
-  return rows
-    .filter((row) => row.isActive && row.text.trim().length > 0 && row.seq < cutoffSeq)
-    .map((row) => ({ id: row.id, seq: row.seq, role: row.role, text: row.text }));
 }
 
 function toChatError(
@@ -223,6 +163,7 @@ export async function runGenerationSession(options: SessionOptions): Promise<Ses
     throw error;
   }
 
+  // Key check stays outside loadPromptInputs so `no_key` persists a bubble.
   if (!options.keyStore.hasKey(config.providerId)) {
     return failFast(
       {
@@ -236,30 +177,20 @@ export async function runGenerationSession(options: SessionOptions): Promise<Ses
     );
   }
 
-  const character = getCharacter(db, chat.characterId);
-  if (!character) {
-    return failFast({ code: 'not_found', message: 'The chat character no longer exists' }, false);
+  let assembled: ReturnType<typeof loadPromptInputs>['assembled'];
+  try {
+    ({ assembled } = loadPromptInputs(db, options.dataDir, chat, {
+      ...(target ? { cutoffSeq: target.seq } : {}),
+    }));
+  } catch (error) {
+    if (error instanceof SessionConfigError) {
+      return failFast(
+        { code: error.code, message: error.message },
+        error.code !== 'not_found' && error.code !== 'invalid_target',
+      );
+    }
+    throw error;
   }
-  const persona = config.personaId ? getPersona(db, config.personaId) : null;
-  const preset = config.presetId ? getPreset(db, config.presetId) : null;
-  const promptTemplate = getPromptTemplate(db);
-  const history = collectHistory(options, target);
-
-  // Final user turn's attachments ride into the multimodal payload.
-  const lastUser = [...history].reverse().find((message) => message.role === 'user');
-  const finalUserAttachments = lastUser ? getAttachmentRows(db, [lastUser.id]) : [];
-
-  const assembled = buildAssembledPrompt({
-    character,
-    persona,
-    promptTemplate,
-    globalDefaults: { contextBudgetTokens: getGlobalDefaults(db).contextBudgetTokens },
-    preset,
-    modelInfo: config.modelInfo,
-    history,
-    finalUserAttachments,
-    dataDir: options.dataDir,
-  });
   assembled.request.model = config.modelId;
   if (config.providerId === 'openrouter') assembled.request.includeUsage = true;
 
@@ -282,6 +213,10 @@ export async function runGenerationSession(options: SessionOptions): Promise<Ses
     );
   }
 
+  // D-T3 invariant: this add() must stay in the same synchronous block as the
+  // route's isGenerating() check (all repo calls below are synchronous SQLite
+  // — no await may be inserted before this line, or the 409 single-flight
+  // race reopens silently).
   activeGenerations.add(chatId);
   const controller = new AbortController();
   let clientClosed = false;

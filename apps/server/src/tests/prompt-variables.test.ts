@@ -1,4 +1,8 @@
-import { isFilledVariable, renderPromptTemplate } from '@lorekeeper/shared';
+import {
+  DEFAULT_SYSTEM_TEMPLATE,
+  isFilledVariable,
+  renderPromptTemplate,
+} from '@lorekeeper/shared';
 import { describe, expect, it } from 'vitest';
 
 describe('prompt-variables renderer', () => {
@@ -6,6 +10,33 @@ describe('prompt-variables renderer', () => {
     expect(
       renderPromptTemplate('Hello {{char}}, meet {{user}}.', { char: 'Vivienne', user: 'Julian' }),
     ).toBe('Hello Vivienne, meet Julian.');
+  });
+
+  it('renders the shipped default template without leaking section syntax (M4 fix)', () => {
+    // Regression: the default template once closed its <Character> block with
+    // an orphan {{/Character}} (no {{#Character}} opener), which the renderer
+    // correctly left verbatim — so every prompt leaked "{{/Character}}".
+    const rendered = renderPromptTemplate(DEFAULT_SYSTEM_TEMPLATE, {
+      char: 'Vivienne',
+      user: 'Julian',
+      tagline: 'Victorian Occultist',
+      description: 'Tall.',
+      personality: 'Sharp.',
+      behavior: 'Fidgets.',
+      communicationStyle: 'Dry wit.',
+      likes: 'Ledgers.',
+      dislikes: 'Damp matches.',
+      backstory: 'Heiress.',
+      scenario: 'A haunted archive.',
+      exampleDialogue: '',
+      systemExtras: 'Period prose.',
+      personaDescription: 'A scribe.',
+      personaName: 'Julian',
+    });
+    expect(rendered).not.toMatch(/\{\{[#/]/); // no section markers survive
+    expect(rendered).toContain('<Character>');
+    expect(rendered).toContain('</Character>');
+    expect(rendered).toContain('Tagline: Victorian Occultist'); // filled section kept
   });
 
   it('renders known-but-unset variables as empty strings; unknown names stay verbatim', () => {

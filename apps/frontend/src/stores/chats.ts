@@ -37,14 +37,23 @@ export const useChatsStore = defineStore('chats', () => {
   const list = ref<ChatSummary[]>([]);
   const loaded = ref(false);
   const activeChat = ref<ChatDetail | null>(null);
+  // Unified loading/error states (M4) for the chronicles list.
+  const listLoading = ref(false);
+  const listError = ref<string | null>(null);
 
   async function loadList(force = false): Promise<void> {
     if (loaded.value && !force) return;
+    listLoading.value = true;
     try {
       list.value = await api.getChats();
       loaded.value = true;
+      listError.value = null;
     } catch (error) {
-      ui.notify(describeApiError(error), 'error');
+      const message = describeApiError(error);
+      listError.value = message;
+      ui.notify(message, 'error');
+    } finally {
+      listLoading.value = false;
     }
   }
 
@@ -219,6 +228,8 @@ export const useChatsStore = defineStore('chats', () => {
     list,
     loaded,
     activeChat,
+    listLoading,
+    listError,
     loadList,
     refreshList,
     openChat,

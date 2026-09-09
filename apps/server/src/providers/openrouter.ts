@@ -63,7 +63,11 @@ export const openRouterProvider: LlmProvider = {
   },
 
   testConnection(apiKey) {
-    return testConnectionCompat(`${BASE_URL}/models`, authHeaders(apiKey, attributionHeaders()));
+    // D-T10 (M4): authenticated probe. The public /models endpoint answers 200
+    // for ANY key, so the "Connected" badge could lie about expired/invalid
+    // keys. GET /auth/key validates the key itself (401 → invalid_key with the
+    // status code preserved) and returns the account's key metadata on success.
+    return testConnectionCompat(`${BASE_URL}/auth/key`, authHeaders(apiKey, attributionHeaders()));
   },
 
   streamChat(request, apiKey, signal) {

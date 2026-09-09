@@ -8,10 +8,10 @@ import PromptTemplateCard from '@/components/settings/PromptTemplateCard.vue';
 import ProviderKeysCard from '@/components/settings/ProviderKeysCard.vue';
 import SamplingCard from '@/components/settings/SamplingCard.vue';
 import BottomNav from '@/components/ui/BottomNav.vue';
+import ErrorBanner from '@/components/ui/ErrorBanner.vue';
 import ToastHost from '@/components/ui/ToastHost.vue';
 import { useSettingsStore } from '@/stores/settings';
 import { useUiStore } from '@/stores/ui';
-import IconBrain from '~icons/lucide/brain';
 import IconRotate from '~icons/lucide/rotate-ccw';
 import IconSliders from '~icons/lucide/sliders-horizontal';
 
@@ -92,8 +92,15 @@ function resetToDefaults(): void {
         <PresetCard />
         <PromptTemplateCard />
       </template>
-      <div v-else class="flex items-center justify-center py-16 text-[13px] text-secondary">
-        <IconBrain class="mr-2 size-4 animate-pulse" /> Opening the sanctum…
+      <!-- Load failure with retry -->
+      <ErrorBanner
+        v-else-if="store.loadError"
+        :message="`Could not open the sanctum — ${store.loadError}`"
+        @retry="store.load(true)"
+      />
+      <!-- First-fetch skeleton pulse -->
+      <div v-else class="space-y-6" aria-hidden="true">
+        <div v-for="index in 3" :key="index" class="h-28 animate-pulse rounded-xl border border-outline-variant/20 bg-surface-container-low" />
       </div>
 
       <!-- Archival version stamp -->

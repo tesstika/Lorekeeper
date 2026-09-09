@@ -275,9 +275,14 @@ describe('provider keys', () => {
   });
 
   it('tests the connection and persists latency', async () => {
+    // D-T10: the OpenRouter probe hits the AUTHENTICATED /auth/key endpoint,
+    // not the public /models catalog — a valid key answers 200, an invalid
+    // one 401 (invalid_key), so the Connected badge can no longer lie.
+    const requestedUrls: string[] = [];
     const fetchMock = vi.fn(async (url: string) => {
-      if (String(url).endsWith('/models')) {
-        return new Response(JSON.stringify({ data: [] }), { status: 200 });
+      requestedUrls.push(String(url));
+      if (String(url).endsWith('/auth/key')) {
+        return new Response(JSON.stringify({ data: { label: 'k', usage: 0 } }), { status: 200 });
       }
       return new Response('{}', { status: 404 });
     });
@@ -287,13 +292,14 @@ describe('provider keys', () => {
     expect(test.statusCode).toBe(200);
     expect(test.json()).toMatchObject({ status: 'connected' });
     expect(test.json().latencyMs).toBeGreaterThanOrEqual(1);
+    expect(requestedUrls.some((url) => url.endsWith('/api/v1/auth/key'))).toBe(true);
 
     const providers = await app.inject({ method: 'GET', url: '/api/providers' });
     const openrouter = providers.json().find((p: { id: string }) => p.id === 'openrouter');
     expect(openrouter.status).toBe('connected');
     expect(openrouter.latencyMs).toBeGreaterThanOrEqual(1);
 
-    // Failure path: replace the key with one the mock rejects.
+    // Failure path: an expired/invalid key is rejected by /auth/key itself.
     const fetchMock401 = vi.fn(
       async () => new Response(JSON.stringify({ error: { message: 'bad key' } }), { status: 401 }),
     );

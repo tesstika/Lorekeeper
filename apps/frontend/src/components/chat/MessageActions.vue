@@ -1,17 +1,32 @@
 <script setup lang="ts" vapor>
-defineProps<{
-  canRegenerate?: boolean;
-  canEdit?: boolean;
-  canRetry?: boolean;
-  busy?: boolean;
-}>();
+withDefaults(
+  defineProps<{
+    canRegenerate?: boolean;
+    canEdit?: boolean;
+    canRetry?: boolean;
+    busy?: boolean;
+    /** Touch tap-reveal (M4): shows the bar without hover on mobile. */
+    revealed?: boolean;
+  }>(),
+  {
+    canRegenerate: false,
+    canEdit: false,
+    canRetry: false,
+    busy: false,
+    revealed: false,
+  },
+);
 const emit = defineEmits<{ regenerate: []; edit: []; copy: []; delete: []; retry: [] }>();
 </script>
 
 <template>
   <div
     class="flex items-center gap-0.5 rounded-lg border border-outline-variant/30 bg-surface-container/90 px-1 py-0.5 text-on-surface-variant backdrop-blur-sm transition-opacity"
-    :class="busy ? 'pointer-events-none opacity-40' : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'"
+    :class="busy
+      ? 'pointer-events-none opacity-40'
+      : revealed
+        ? 'opacity-100'
+        : 'opacity-0 group-hover:opacity-100 focus-within:opacity-100'"
   >
     <button
       v-if="canRetry"

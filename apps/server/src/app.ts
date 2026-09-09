@@ -22,6 +22,7 @@ import { registerPersonaRoutes } from './routes/personas';
 import { registerPresetRoutes } from './routes/presets';
 import { registerProviderRoutes } from './routes/providers';
 import { registerSettingsRoutes } from './routes/settings';
+import { cleanupOrphanMedia } from './services/attachments';
 import { ensureSeedPresets } from './services/presetsRepo';
 
 export interface BuildAppOptions {
@@ -122,6 +123,23 @@ export async function buildApp(options: BuildAppOptions = {}) {
     spaEnabled = true;
   }
   await app.register(fastifyStatic, { root: mediaDir, prefix: '/media/', decorateReply: false });
+
+  // Attachment orphan GC (D-C1/D-T4): abandoned draft uploads (messageId NULL
+  // older than 24 h) and unreferenced media files are swept on boot, deferred
+  // so startup/listen is never blocked. Unref'd — never holds the process.
+  const gcTimer = setTimeout(() => {
+    try {
+      const result = cleanupOrphanMedia(db, dataDir);
+      if (result.prunedRows > 0 || result.deletedFiles > 0) {
+        app.log.info(
+          `Attachment GC: pruned ${result.prunedRows} orphan row(s), deleted ${result.deletedFiles} file(s)`,
+        );
+      }
+    } catch (error) {
+      app.log.warn({ error }, 'Attachment GC sweep failed');
+    }
+  }, 1_000);
+  gcTimer.unref();
 
   return app;
 }

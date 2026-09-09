@@ -39,6 +39,7 @@ export function toChat(row: ChatRow) {
     providerId: row.providerId,
     modelId: row.modelId,
     presetId: row.presetId,
+    contextBudgetTokens: row.contextBudgetTokens,
     lastMessageAt: row.lastMessageAt,
     lastMessagePreview: row.lastMessagePreview,
     createdAt: row.createdAt,
@@ -58,6 +59,7 @@ export interface ChatSummaryRecord {
   providerId: 'openrouter' | 'unorouter' | null;
   modelId: string | null;
   presetId: string | null;
+  contextBudgetTokens: number | null;
   lastMessageAt: string;
   lastMessagePreview: string | null;
   createdAt: string;

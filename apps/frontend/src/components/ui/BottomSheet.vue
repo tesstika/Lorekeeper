@@ -1,11 +1,18 @@
 <script setup lang="ts" vapor>
-defineProps<{ open: boolean; title: string }>();
+import { useOverlayA11y } from '@/utils/overlayA11y';
+
+const props = defineProps<{ open: boolean; title: string }>();
 const emit = defineEmits<{ close: [] }>();
+
+// M4 a11y: focus trap + Escape-to-close + focus restore for every sheet.
+// (Vapor cannot bind template refs — the overlay is marked by data attribute.)
+const { token } = useOverlayA11y(() => props.open, { onEscape: () => emit('close') });
 </script>
 
 <template>
   <div
     v-if="open"
+    :data-lk-overlay="token"
     class="fixed inset-0 z-50 flex items-end justify-center bg-surface-dim/70 backdrop-blur-sm"
     role="dialog"
     aria-modal="true"

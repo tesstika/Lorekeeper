@@ -1,0 +1,1 @@
+ALTER TABLE `chats` ADD `context_budget_tokens` integer;

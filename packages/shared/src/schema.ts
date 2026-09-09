@@ -18,7 +18,7 @@ Communication style: {{communicationStyle}}
 Likes: {{likes}} | Dislikes: {{dislikes}}
 Backstory: {{backstory}}
 Scenario: {{scenario}}
-{{/Character}}
+</Character>
 
 <Persona>
 {{user}}: {{personaDescription}}
@@ -521,6 +521,8 @@ export const chatSchema = z.object({
   providerId: providerIdSchema.nullable(),
   modelId: z.string().nullable(),
   presetId: z.string().nullable(),
+  // Per-chat context budget override (M4): null → globalDefaults value.
+  contextBudgetTokens: z.number().int().min(1024).max(1_000_000).nullable(),
   lastMessageAt: z.string(),
   lastMessagePreview: z.string().nullable(),
   createdAt: z.string(),
@@ -549,6 +551,7 @@ export const chatPatchSchema = z.object({
   providerId: providerIdSchema.nullable().optional(),
   modelId: z.string().max(200).nullable().optional(),
   presetId: z.string().nullable().optional(),
+  contextBudgetTokens: z.number().int().min(1024).max(1_000_000).nullable().optional(),
   status: chatStatusSchema.optional(),
 });
 export type ChatPatch = z.output<typeof chatPatchSchema>;
@@ -680,3 +683,41 @@ export type SseEvent = z.output<typeof sseEventSchema>;
 
 /** SSE endpoint request bodies are empty; declared for the client contract. */
 export const sseGenerateBodySchema = z.object({}).optional();
+
+// -- Prompt preview (plan §7.1 debug endpoint, M4) ------------------------------
+
+/**
+ * One assembled wire message as the model sees it. Image parts carry a
+ * redacted placeholder URL — the debug response never ships megabytes of
+ * base64 to the client.
+ */
+export const promptPreviewContentPartSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('text'), text: z.string() }),
+  z.object({ type: z.literal('image_url'), imageUrl: z.object({ url: z.string() }) }),
+]);
+export type PromptPreviewContentPart = z.output<typeof promptPreviewContentPartSchema>;
+
+export const promptPreviewMessageSchema = z.object({
+  role: z.enum(['system', 'user', 'assistant']),
+  content: z.union([z.string(), z.array(promptPreviewContentPartSchema)]),
+});
+export type PromptPreviewMessage = z.output<typeof promptPreviewMessageSchema>;
+
+export const promptPreviewResponseSchema = z.object({
+  /** Rendered system template (leading system message). */
+  system: z.string(),
+  /** Trailing system slot (PHI + character jailbreak) — null when both empty. */
+  trailing: z.string().nullable(),
+  /** Active-variant history after trimming, in wire order. */
+  history: z.array(promptPreviewMessageSchema),
+  warnings: z.array(z.string()),
+  /** History token budget after the overhead subtraction (plan §4.3). */
+  budget: z.number().int(),
+  /** Estimated tokens of the assembled history (chars/4 + 5 % margin). */
+  estimatedTokens: z.number().int(),
+  droppedTurnsCount: z.number().int(),
+  providerId: z.string().nullable(),
+  modelId: z.string().nullable(),
+  modelContextLength: z.number().nullable(),
+});
+export type PromptPreviewResponse = z.output<typeof promptPreviewResponseSchema>;

@@ -1,5 +1,5 @@
 <script setup lang="ts" vapor>
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, ref, useTemplateRef, watch } from 'vue';
 
 const props = withDefaults(
   defineProps<{
@@ -11,7 +11,9 @@ const props = withDefaults(
   { watchKey: 0, autoScroll: true },
 );
 
-const scrollEl = ref<HTMLElement | null>(null);
+// Vapor template refs: `ref="scrollEl"` binds via useTemplateRef, NOT a plain
+// ref() (M4 fix — the scroll manager was silently inert without this).
+const scrollEl = useTemplateRef<HTMLElement>('scrollEl');
 // Pinned-to-bottom by default; detached when the user scrolls up >120px (§6.5.1).
 const pinned = ref(true);
 

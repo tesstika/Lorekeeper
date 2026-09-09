@@ -7,6 +7,9 @@ import ChatSettingsSheet from '@/components/chat/ChatSettingsSheet.vue';
 import ContextRibbon from '@/components/chat/ContextRibbon.vue';
 import MessageItem from '@/components/chat/MessageItem.vue';
 import MessageList from '@/components/chat/MessageList.vue';
+import PromptPreviewModal from '@/components/chat/PromptPreviewModal.vue';
+import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
+import ToastHost from '@/components/ui/ToastHost.vue';
 import { useCharactersStore } from '@/stores/characters';
 import { useChatsStore } from '@/stores/chats';
 import { useSettingsStore } from '@/stores/settings';
@@ -23,6 +26,7 @@ const settingsStore = useSettingsStore();
 const streaming = useStreamingStore();
 
 const sheetOpen = ref(false);
+const previewOpen = ref(false);
 /** The variant that finished most recently (drives the delivered blink). */
 const justFinished = ref<{ variantId: string; tone: 'stop' | 'aborted' | 'error' } | null>(null);
 const justFinishedTimer = ref<ReturnType<typeof setTimeout> | null>(null);
@@ -199,6 +203,15 @@ async function onActivate(messageId: string, variantId: string): Promise<void> {
         </div>
         <button
           type="button"
+          aria-label="Prompt preview — what the model sees"
+          title="Prompt preview"
+          class="p-1.5 text-on-surface-variant transition-colors hover:text-primary"
+          @click="previewOpen = true"
+        >
+          <svg viewBox="0 0 24 24" class="size-5 fill-none stroke-current stroke-2"><path d="M15 12h-5" /><path d="M15 8h-5" /><path d="M19 17V5a2 2 0 0 0-2-2H4" /><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3" /></svg>
+        </button>
+        <button
+          type="button"
           aria-label="Chat settings"
           class="p-1.5 text-on-surface-variant transition-colors hover:text-primary"
           @click="sheetOpen = true"
@@ -252,5 +265,12 @@ async function onActivate(messageId: string, variantId: string): Promise<void> {
     </div>
 
     <ChatSettingsSheet :open="sheetOpen" @close="sheetOpen = false" />
+    <PromptPreviewModal
+      :open="previewOpen"
+      :chat-id="chatId"
+      @close="previewOpen = false"
+    />
+    <ToastHost />
+    <ConfirmDialog />
   </div>
 </template>

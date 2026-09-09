@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/dist", "!**/data", "!**/.vitest", "!**/temp"]
+    "includes": ["**", "!**/dist", "!**/data", "!**/.vitest", "!**/temp", "!**/.commandcode"]
   },
   "formatter": {
     "enabled": true,

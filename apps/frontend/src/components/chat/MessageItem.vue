@@ -76,6 +76,20 @@ function switchVariant(direction: -1 | 1): void {
   if (target && target.id !== props.message.activeVariantId) emit('activate', target.id);
 }
 
+// -- Touch tap-reveal (M3 Deviation 3 rider, M4 a11y pass) --------------------
+// On touch-sized viewports (< 768px) tapping the bubble toggles the action
+// bar; desktop keeps instant hover/focus-within reveal. Taps on interactive
+// elements (buttons, edit textarea, links) never toggle.
+const revealed = ref(false);
+
+function onBubbleTap(event: MouseEvent): void {
+  if (event.target instanceof Element) {
+    if (event.target.closest('button, a, textarea, input, select, [role="checkbox"]')) return;
+  }
+  if (!window.matchMedia?.('(max-width: 767px)').matches) return;
+  revealed.value = !revealed.value;
+}
+
 // -- Copy (raw Markdown source, plan §6.5.7) ----------------------------------
 async function copyMessage(): Promise<void> {
   const text = activeVariant.value?.text ?? '';
@@ -153,6 +167,7 @@ async function requestDelete(): Promise<void> {
   <article
     class="group relative flex w-full flex-col gap-2 pt-1"
     :class="tone === 'character' ? 'border-b border-outline-variant/15 pb-4' : 'pb-2'"
+    @click="onBubbleTap($event)"
   >
     <!-- Header line -->
     <div class="flex select-none items-center justify-between">
@@ -270,6 +285,7 @@ async function requestDelete(): Promise<void> {
         :can-edit="!message.isError"
         :can-retry="message.isError"
         :busy="busy"
+        :revealed="revealed"
         @regenerate="emit('regenerate')"
         @edit="startEdit()"
         @copy="copyMessage()"

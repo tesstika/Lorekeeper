@@ -1,6 +1,7 @@
 <script setup lang="ts" vapor>
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useUiStore } from '@/stores/ui';
+import { useOverlayA11y } from '@/utils/overlayA11y';
 
 const ui = useUiStore();
 const checked = ref(false);
@@ -13,6 +14,15 @@ watch(
   },
 );
 
+// M4 a11y: focus trap + Escape + focus restore, driven by the store state.
+// (Vapor cannot bind template refs — the overlay is marked by data attribute.)
+const { token } = useOverlayA11y(
+  computed(() => ui.pendingConfirm !== null),
+  {
+    onEscape: () => ui.settleConfirm(false, checked.value),
+  },
+);
+
 function toggleChecked(): void {
   checked.value = !checked.value;
 }
@@ -21,6 +31,7 @@ function toggleChecked(): void {
 <template>
   <div
     v-if="ui.pendingConfirm"
+    :data-lk-overlay="token"
     class="fixed inset-0 z-[60] flex items-center justify-center bg-surface-dim/70 px-6 backdrop-blur-sm"
     role="dialog"
     aria-modal="true"

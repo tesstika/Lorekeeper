@@ -15,6 +15,13 @@
       "when": 1788774101184,
       "tag": "0001_empty_shadowcat",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1788873874954,
+      "tag": "0002_cynical_firelord",
+      "breakpoints": true
     }
   ]
 }
