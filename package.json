@@ -7,7 +7,8 @@
   "type": "module",
   "engines": {
     "bun": ">=1.4.2",
-    "node": ">=26.0.0"
+    "node": ">=26.0.0",
+    "npm": ">=12.0.2"
   },
   "workspaces": [
     "apps/*",
@@ -26,10 +27,11 @@
     "db:migrate": "bun apps/server/src/db/migrate.ts"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.12",
+    "@biomejs/biome": "2.5.13",
     "@types/node": "26.4.1",
     "drizzle-kit": "0.31.10",
     "typescript": "7.0.2",
+    "vite-plugin-vue-devtools": "8.2.1",
     "vitest": "5.0.0"
   }
 }

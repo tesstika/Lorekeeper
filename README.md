@@ -10,7 +10,7 @@ character, persona, and setting in a local SQLite database on your machine — n
 
 ## Status
 
-`M0 — Scaffold & skeleton` (see [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for the full plan).
+v1 is feature-complete — milestones M0–M4 (scaffold, settings & providers, characters & personas, chats & SSE streaming, polish & hardening) are implemented and audited.
 
 ## Stack
 
@@ -27,11 +27,18 @@ bun run test         # vitest (unit + component)
 bun run typecheck    # tsc (server/shared) + vue-tsc (frontend)
 bun run lint         # biome check
 bun run db:generate  # generate SQL migration from the Drizzle schema
+bun run db:migrate   # apply migrations manually (the server also migrates on boot)
 bun run build        # build the SPA
 bun run start        # serve built SPA + API on http://127.0.0.1:3000
 ```
 
 The SQLite database and media live in `data/` (created on first boot, never committed).
+
+### Production (single process)
+
+`bun run build` compiles the SPA into `apps/frontend/dist`; `bun run start` then serves the SPA and
+the API from one Fastify process on **http://127.0.0.1:3000**. On Windows, `start.bat` wraps the
+whole flow — it checks for Bun, builds the frontend if missing, and opens the browser.
 
 ## Dev notes (Windows)
 
