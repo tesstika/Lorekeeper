@@ -20,13 +20,13 @@
     "@vue/devtools-api": "8.2.1",
     "dompurify": "3.4.15",
     "highlight.js": "11.12.0",
-    "marked": "18.0.11",
+    "marked": "18.0.12",
     "pinia": "4.0.3",
     "vue": "3.6.0-rc.7",
     "vue-router": "5.3.1"
   },
   "devDependencies": {
-    "@iconify-json/lucide": "1.2.129",
+    "@iconify-json/lucide": "1.2.130",
     "@tailwindcss/vite": "4.3.3",
     "@vitejs/plugin-vue": "6.0.8",
     "@vue/test-utils": "2.5.0",

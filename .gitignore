@@ -8,12 +8,15 @@ data/
 .env
 .env.*
 !.env.example
+.commandcode/
 
 # Temp
 log-M1-glm5.3-flash.txt
 log-M2-glm5.3-flash.txt
 log-M3-glm5.3-flash.txt
 log-M4-glm5.3-flash.txt
+log-M4-glm5.3-flash(1part).txt
+log-M4-glm5.3-flash(2part).md
 IMPLEMENTATION_PLAN.md
 M0_AUDIT_SIGNOFF.md
 M1_AUDIT_SIGNOFF.md
