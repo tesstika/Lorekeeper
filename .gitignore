@@ -1,30 +1,31 @@
+# ─── Dependencies & package manager ─────────────────────
 node_modules/
+bun.lock
+
+# ─── Build outputs ──────────────────────────────────────
 dist/
+.vite/
+
+# ─── Runtime data & media ───────────────────────────────
 data/
 .vitest/
-.playwright-mcp/
 *.log
-.DS_Store
+
+# ─── Environment & secrets ──────────────────────────────
 .env
 .env.*
 !.env.example
-.commandcode/
 
-# Temp
-log-M1-glm5.3-flash.txt
-log-M2-glm5.3-flash.txt
-log-M3-glm5.3-flash.txt
-log-M4-glm5.3-flash.txt
-log-M4-glm5.3-flash(1part).txt
-log-M4-glm5.3-flash(2part).md
+# ─── OS / editor junk ───────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ─── Local tooling & internal working files ─────────────
+.commandcode/
+.playwright-mcp/
+temp/
 IMPLEMENTATION_PLAN.md
-M0_AUDIT_SIGNOFF.md
-M1_AUDIT_SIGNOFF.md
-M2_AUDIT_SIGNOFF.md
-M3_AUDIT_SIGNOFF.md
-M4_AUDIT_SIGNOFF.md
-M0_REPORT.md
-M1_REPORT.md
-M2_REPORT.md
-M3_REPORT.md
-M4_REPORT.md
+M*_AUDIT_SIGNOFF.md
+M*_REPORT.md
