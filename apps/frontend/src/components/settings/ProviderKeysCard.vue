@@ -127,21 +127,21 @@ async function testConnection(id: ProviderId): Promise<void> {
       <div v-for="provider in providers" :key="provider.id" class="space-y-2 p-3.5">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <span class="text-[16px] font-semibold leading-[22px] text-on-surface">{{ provider.label }}</span>
+            <span class="text-[16px] font-semibold leading-5.5 text-on-surface">{{ provider.label }}</span>
             <span class="rounded-full border border-outline-variant/30 bg-surface-container-highest px-2 py-0.5 text-[10px] font-medium text-secondary">
               {{ badges[provider.id] }}
             </span>
           </div>
           <div class="flex items-center gap-1.5" :class="statusColor(provider)">
             <span class="h-2 w-2 rounded-full" :class="dotColor(provider)"></span>
-            <span class="text-[11px] leading-[14px]">{{ statusText(provider) }}</span>
+            <span class="text-[11px] leading-3.5">{{ statusText(provider) }}</span>
           </div>
         </div>
         <div class="relative flex items-center">
           <input
             :value="draftKeys[provider.id]"
             :type="revealed[provider.id] ? 'text' : 'password'"
-            class="w-full rounded-lg border border-outline-variant/30 bg-surface-container-low px-3 py-2 pr-[7.5rem] font-mono text-xs text-on-surface placeholder:text-outline focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            class="w-full rounded-lg border border-outline-variant/30 bg-surface-container-low px-3 py-2 pr-30 font-mono text-xs text-on-surface placeholder:text-outline focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             :placeholder="provider.hasKey ? provider.keyHint ?? '' : `Enter ${provider.label} API key…`"
             :aria-label="`${provider.label} API key`"
             autocomplete="off"
@@ -156,8 +156,8 @@ async function testConnection(id: ProviderId): Promise<void> {
               :aria-label="revealed[provider.id] ? 'Hide key input' : 'Reveal key input'"
               @click="revealed[provider.id] = !revealed[provider.id]"
             >
-              <IconEyeOff v-if="revealed[provider.id]" class="size-[18px]" />
-              <IconEye v-else class="size-[18px]" />
+              <IconEyeOff v-if="revealed[provider.id]" class="size-4.5" />
+              <IconEye v-else class="size-4.5" />
             </button>
             <button
               type="button"
@@ -166,7 +166,7 @@ async function testConnection(id: ProviderId): Promise<void> {
               :aria-label="`Paste ${provider.label} API key`"
               @click="pasteKey(provider.id)"
             >
-              <IconClipboard class="size-[18px]" />
+              <IconClipboard class="size-4.5" />
             </button>
             <button
               type="button"
@@ -186,7 +186,7 @@ async function testConnection(id: ProviderId): Promise<void> {
               :aria-label="confirmingClear[provider.id] ? `Confirm clearing ${provider.label} key` : `Clear ${provider.label} key`"
               @click="clearKey(provider.id)"
             >
-              <IconTrash class="size-[18px]" />
+              <IconTrash class="size-4.5" />
             </button>
           </div>
         </div>
@@ -208,7 +208,7 @@ async function testConnection(id: ProviderId): Promise<void> {
     </div>
     <div class="flex items-center gap-1.5 px-2 text-secondary">
       <IconLock class="size-3.5" />
-      <p class="text-[11px] leading-[14px] tracking-wide">Keys are stored encrypted locally on your device.</p>
+      <p class="text-[11px] leading-3.5 tracking-wide">Keys are stored encrypted locally on your device.</p>
     </div>
   </section>
 </template>

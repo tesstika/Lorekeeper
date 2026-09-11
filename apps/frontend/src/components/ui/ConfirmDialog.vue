@@ -32,7 +32,7 @@ function toggleChecked(): void {
   <div
     v-if="ui.pendingConfirm"
     :data-lk-overlay="token"
-    class="fixed inset-0 z-[60] flex items-center justify-center bg-surface-dim/70 px-6 backdrop-blur-sm"
+    class="fixed inset-0 z-60 flex items-center justify-center bg-surface-dim/70 px-6 backdrop-blur-sm"
     role="dialog"
     aria-modal="true"
     :aria-label="ui.pendingConfirm.title"
@@ -52,7 +52,7 @@ function toggleChecked(): void {
         @click="toggleChecked"
       >
         <span
-          class="flex size-4 flex-shrink-0 items-center justify-center rounded border transition-colors"
+          class="flex size-4 shrink-0 items-center justify-center rounded border transition-colors"
           :class="checked ? 'border-primary bg-primary text-on-primary' : 'border-outline-variant bg-surface-container-low'"
         >
           <svg v-if="checked" viewBox="0 0 16 16" class="size-3 fill-none stroke-current stroke-2">

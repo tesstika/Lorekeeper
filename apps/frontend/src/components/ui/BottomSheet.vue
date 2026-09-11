@@ -19,7 +19,7 @@ const { token } = useOverlayA11y(() => props.open, { onEscape: () => emit('close
     :aria-label="title"
     @click.self="emit('close')"
   >
-    <div class="w-full max-w-[390px] rounded-t-2xl border-t border-outline-variant/40 bg-surface-container px-5 pb-8 pt-4 shadow-2xl">
+    <div class="w-full max-w-97.5 rounded-t-2xl border-t border-outline-variant/40 bg-surface-container px-5 pb-8 pt-4 shadow-2xl">
       <div class="mx-auto mb-3 h-1 w-16 rounded-full bg-outline-variant/50" aria-hidden="true" />
       <div class="mb-3 flex items-center justify-between">
         <h2 class="text-[16px] font-semibold text-on-surface">{{ title }}</h2>

@@ -52,10 +52,10 @@ function formatTokens(value: number): string {
         <div class="flex items-center justify-between">
           <div>
             <div class="flex items-center gap-2">
-              <span class="text-[16px] font-semibold leading-[22px] text-on-surface">Temperature</span>
+              <span class="text-[16px] font-semibold leading-5.5 text-on-surface">Temperature</span>
               <span class="text-xs italic text-primary-container">{{ temperatureLabel(target.temperature) }}</span>
             </div>
-            <p class="mt-0.5 text-[11px] leading-[14px] text-secondary">
+            <p class="mt-0.5 text-[11px] leading-3.5 text-secondary">
               Controls narrative randomness and metaphorical flair.
             </p>
           </div>
@@ -78,10 +78,10 @@ function formatTokens(value: number): string {
         <div class="flex items-center justify-between">
           <div>
             <div class="flex items-center gap-2">
-              <span class="text-[16px] font-semibold leading-[22px] text-on-surface">Top P</span>
+              <span class="text-[16px] font-semibold leading-5.5 text-on-surface">Top P</span>
               <span class="text-xs italic text-secondary">{{ topPLabel(target.topP) }}</span>
             </div>
-            <p class="mt-0.5 text-[11px] leading-[14px] text-secondary">
+            <p class="mt-0.5 text-[11px] leading-3.5 text-secondary">
               Limits selection to tokens comprising the top probability mass.
             </p>
           </div>
@@ -102,8 +102,8 @@ function formatTokens(value: number): string {
       <!-- Top K -->
       <div class="flex items-center justify-between p-3.5">
         <div>
-          <span class="text-[16px] font-semibold leading-[22px] text-on-surface">Top K</span>
-          <p class="mt-0.5 text-[11px] leading-[14px] text-secondary">
+          <span class="text-[16px] font-semibold leading-5.5 text-on-surface">Top K</span>
+          <p class="mt-0.5 text-[11px] leading-3.5 text-secondary">
             Candidate cap per step — omitted from requests when Off.
           </p>
         </div>
@@ -113,8 +113,8 @@ function formatTokens(value: number): string {
       <!-- Max Response Tokens -->
       <div class="flex items-center justify-between p-3.5">
         <div>
-          <span class="text-[16px] font-semibold leading-[22px] text-on-surface">Max Response Tokens</span>
-          <p class="mt-0.5 text-[11px] leading-[14px] text-secondary">
+          <span class="text-[16px] font-semibold leading-5.5 text-on-surface">Max Response Tokens</span>
+          <p class="mt-0.5 text-[11px] leading-3.5 text-secondary">
             Maximum length reserved for the model's reply.
           </p>
         </div>
@@ -131,8 +131,8 @@ function formatTokens(value: number): string {
       <!-- Frequency Penalty -->
       <div class="flex items-center justify-between p-3.5">
         <div>
-          <span class="text-[16px] font-semibold leading-[22px] text-on-surface">Frequency Penalty</span>
-          <p class="mt-0.5 text-[11px] leading-[14px] text-secondary">
+          <span class="text-[16px] font-semibold leading-5.5 text-on-surface">Frequency Penalty</span>
+          <p class="mt-0.5 text-[11px] leading-3.5 text-secondary">
             Reduces direct verbatim phrase repetitions.
           </p>
         </div>
@@ -149,8 +149,8 @@ function formatTokens(value: number): string {
       <!-- Presence Penalty -->
       <div class="flex items-center justify-between p-3.5">
         <div>
-          <span class="text-[16px] font-semibold leading-[22px] text-on-surface">Presence Penalty</span>
-          <p class="mt-0.5 text-[11px] leading-[14px] text-secondary">
+          <span class="text-[16px] font-semibold leading-5.5 text-on-surface">Presence Penalty</span>
+          <p class="mt-0.5 text-[11px] leading-3.5 text-secondary">
             Encourages fresh plot elements and locations.
           </p>
         </div>
@@ -166,8 +166,8 @@ function formatTokens(value: number): string {
 
       <!-- Stop Sequences -->
       <div class="p-3.5">
-        <p class="text-[16px] font-semibold leading-[22px] text-on-surface">Stop Sequences</p>
-        <p class="mt-0.5 text-[11px] leading-[14px] text-secondary">
+        <p class="text-[16px] font-semibold leading-5.5 text-on-surface">Stop Sequences</p>
+        <p class="mt-0.5 text-[11px] leading-3.5 text-secondary">
           Strings that immediately halt generation turns.
         </p>
         <TagInput

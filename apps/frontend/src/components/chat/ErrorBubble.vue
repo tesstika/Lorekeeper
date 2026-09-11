@@ -50,7 +50,7 @@ const retryDisabled = computed(() => countdownMs.value > 0);
     role="alert"
   >
     <div class="flex items-center gap-2">
-      <svg viewBox="0 0 24 24" class="size-4 flex-shrink-0 fill-none stroke-error stroke-2" aria-hidden="true">
+      <svg viewBox="0 0 24 24" class="size-4 shrink-0 fill-none stroke-error stroke-2" aria-hidden="true">
         <circle cx="12" cy="12" r="10" />
         <path d="M12 8v5" />
         <path d="M12 16.5v.01" />
@@ -66,7 +66,7 @@ const retryDisabled = computed(() => countdownMs.value > 0);
       </button>
     </div>
     <div v-if="detailsOpen" class="mt-2 rounded bg-surface-container-lowest/60 px-2.5 py-2">
-      <p class="break-words font-mono text-[11px] leading-relaxed text-on-surface-variant">
+      <p class="wrap-break-word font-mono text-[11px] leading-relaxed text-on-surface-variant">
         {{ error.message }}
       </p>
       <p v-if="error.statusCode !== undefined || error.retryAfterMs !== undefined" class="mt-1 font-mono text-[10px] text-outline">

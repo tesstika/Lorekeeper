@@ -174,11 +174,11 @@ async function requestDelete(): Promise<void> {
       <div class="flex min-w-0 items-center gap-2">
         <div
           v-if="tone === 'user'"
-          class="flex size-5 flex-shrink-0 items-center justify-center rounded-full border border-primary/40 bg-primary/20 text-[10px] font-bold text-primary"
+          class="flex size-5 shrink-0 items-center justify-center rounded-full border border-primary/40 bg-primary/20 text-[10px] font-bold text-primary"
         >
           {{ initials }}
         </div>
-        <div v-else class="flex size-5 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-container ring-1 ring-outline-variant/30">
+        <div v-else class="flex size-5 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-container ring-1 ring-outline-variant/30">
           <img v-if="avatarPath" :src="avatarPath" :alt="displayName" class="size-full object-cover" />
           <span v-else class="text-[9px] font-bold text-secondary">{{ initials }}</span>
         </div>
@@ -193,7 +193,7 @@ async function requestDelete(): Promise<void> {
             : 'border border-outline-variant/30 bg-secondary-container/50 text-secondary'"
         >{{ tone === 'user' ? 'You' : 'Character' }}</span>
       </div>
-      <div class="flex flex-shrink-0 items-center gap-1.5">
+      <div class="flex shrink-0 items-center gap-1.5">
         <DeliveredDot
           v-if="justFinishedTone && !isStreaming"
           :tone="justFinishedTone"
@@ -207,7 +207,7 @@ async function requestDelete(): Promise<void> {
 
     <!-- Body -->
     <div class="relative pl-7" :class="tone === 'user' ? 'pr-4 text-on-surface' : ''">
-      <span v-if="tone === 'user'" class="absolute bottom-0 right-0 top-0 w-[3px] rounded-full bg-[#F472B6]" aria-hidden="true" />
+      <span v-if="tone === 'user'" class="absolute bottom-0 right-0 top-0 w-0.75 rounded-full bg-[#F472B6]" aria-hidden="true" />
       <ErrorBubble
         v-if="message.isError && message.error"
         :error="message.error"

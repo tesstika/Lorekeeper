@@ -166,7 +166,7 @@ function contextTag(model: ModelInfo): string | null {
             <IconBrain class="size-6" />
           </div>
           <div>
-            <div class="text-[16px] font-semibold leading-[22px] text-on-surface transition-colors group-hover:text-primary">
+            <div class="text-[16px] font-semibold leading-5.5 text-on-surface transition-colors group-hover:text-primary">
               {{ store.activeModelId ?? 'No model selected' }}
             </div>
             <div class="mt-0.5 flex items-center gap-2">
@@ -176,12 +176,12 @@ function contextTag(model: ModelInfo): string | null {
               >
                 via {{ store.activeProvider?.label ?? store.activeProviderId }}
               </span>
-              <span v-if="store.activeModelInfo && contextTag(store.activeModelInfo)" class="text-[11px] leading-[14px] text-secondary">
+              <span v-if="store.activeModelInfo && contextTag(store.activeModelInfo)" class="text-[11px] leading-3.5 text-secondary">
                 {{ contextTag(store.activeModelInfo) }} context
                 <template v-if="isVisionModel(store.activeModelInfo)"> • vision</template>
                 <template v-else-if="modalityUnknown(store.activeModelInfo)"> • modality unknown</template>
               </span>
-              <span v-if="store.activeModelInfo && formatModelPricing(store.activeModelInfo)" class="text-[11px] leading-[14px] text-secondary">
+              <span v-if="store.activeModelInfo && formatModelPricing(store.activeModelInfo)" class="text-[11px] leading-3.5 text-secondary">
                 {{ formatModelPricing(store.activeModelInfo) }}
               </span>
             </div>
@@ -193,14 +193,14 @@ function contextTag(model: ModelInfo): string | null {
       <!-- Browse library quick link -->
       <div class="flex items-center justify-between bg-surface-container-low p-3">
         <div class="flex items-center gap-2 text-on-surface-variant">
-          <IconSearch class="size-[18px] text-secondary" />
-          <span class="text-[13px] leading-[18px] text-secondary">
+          <IconSearch class="size-4.5 text-secondary" />
+          <span class="text-[13px] leading-4.5 text-secondary">
             Browse {{ catalog.length > 0 ? catalog.length : 'available' }} roleplay models…
           </span>
         </div>
         <button
           type="button"
-          class="rounded-md border border-outline-variant/40 bg-surface-container px-2.5 py-1 text-[13px] leading-[18px] font-medium text-primary transition-colors hover:bg-surface-container-high"
+          class="rounded-md border border-outline-variant/40 bg-surface-container px-2.5 py-1 text-[13px] leading-4.5 font-medium text-primary transition-colors hover:bg-surface-container-high"
           @click="libraryOpen = true"
         >
           Library
@@ -210,7 +210,7 @@ function contextTag(model: ModelInfo): string | null {
       <!-- Manual model id -->
       <div class="space-y-2 p-3.5">
         <div class="flex items-center justify-between">
-          <span class="text-[16px] font-semibold leading-[22px] text-on-surface">Custom model ID</span>
+          <span class="text-[16px] font-semibold leading-5.5 text-on-surface">Custom model ID</span>
           <span class="text-[11px] text-outline">Any model identifier the provider accepts</span>
         </div>
         <div class="flex items-center gap-2">

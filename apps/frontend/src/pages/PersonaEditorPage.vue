@@ -109,7 +109,7 @@ const heading = computed(() => (isNew.value ? 'New Persona' : 'Edit Persona'));
 </script>
 
 <template>
-  <div class="mx-auto flex min-h-dvh max-w-[420px] flex-col border-x border-outline-variant/20 bg-surface shadow-2xl">
+  <div class="mx-auto flex min-h-dvh max-w-105 flex-col border-x border-outline-variant/20 bg-surface shadow-2xl">
     <header class="sticky top-0 z-40 flex h-16 items-center justify-between bg-surface/90 px-5 backdrop-blur-md">
       <button
         type="button"
@@ -198,7 +198,7 @@ const heading = computed(() => (isNew.value ? 'New Persona' : 'Edit Persona'));
       </div>
     </main>
 
-    <footer class="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[420px] border-t border-outline-variant/30 bg-surface/90 px-5 py-3 backdrop-blur-md">
+    <footer class="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-105 border-t border-outline-variant/30 bg-surface/90 px-5 py-3 backdrop-blur-md">
       <button
         type="button"
         class="flex w-full items-center justify-center gap-2 rounded-xl bg-primary-container py-3 text-[14px] font-semibold text-on-primary-container shadow-[0_4px_20px_-2px_rgba(192,132,252,0.35)] transition-all hover:shadow-[0_4px_24px_0px_rgba(192,132,252,0.5)] active:scale-95"

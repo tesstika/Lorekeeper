@@ -102,9 +102,9 @@ async function copyText(text: string, label: string): Promise<void> {
     aria-label="Prompt preview — what the model sees"
     @click.self="emit('close')"
   >
-    <div class="flex h-[92dvh] w-full max-w-[560px] flex-col overflow-hidden rounded-t-2xl border border-outline-variant/40 bg-surface-container sm:h-[85dvh] sm:rounded-2xl">
+    <div class="flex h-[92dvh] w-full max-w-140 flex-col overflow-hidden rounded-t-2xl border border-outline-variant/40 bg-surface-container sm:h-[85dvh] sm:rounded-2xl">
       <!-- Header -->
-      <div class="flex flex-shrink-0 items-center justify-between border-b border-outline-variant/30 px-4 py-3">
+      <div class="flex shrink-0 items-center justify-between border-b border-outline-variant/30 px-4 py-3">
         <div>
           <h2 class="text-[15px] font-semibold text-on-surface">What the model sees</h2>
           <p v-if="preview" class="mt-0.5 text-[11px] text-secondary">
@@ -221,7 +221,7 @@ async function copyText(text: string, label: string): Promise<void> {
         </div>
 
         <!-- Footer actions -->
-        <div class="flex flex-shrink-0 gap-2 border-t border-outline-variant/30 px-4 py-3">
+        <div class="flex shrink-0 gap-2 border-t border-outline-variant/30 px-4 py-3">
           <button
             type="button"
             class="flex-1 rounded-full border border-outline-variant/40 py-2 text-[12.5px] font-medium text-on-surface transition-colors hover:border-primary/50"

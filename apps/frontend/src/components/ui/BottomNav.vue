@@ -5,7 +5,7 @@ import IconUsers from '~icons/lucide/users';
 </script>
 
 <template>
-  <nav class="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-[390px] border-t border-outline-variant/30 bg-surface/95 backdrop-blur-md">
+  <nav class="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-97.5 border-t border-outline-variant/30 bg-surface/95 backdrop-blur-md">
     <div class="grid grid-cols-3">
       <RouterLink
         to="/chats"

@@ -9,7 +9,7 @@ const ui = useUiStore();
     <div
       v-for="toast in ui.toasts"
       :key="toast.id"
-      class="pointer-events-auto max-w-[390px] rounded-lg border px-4 py-2 text-[12px] font-medium shadow-lg backdrop-blur-md"
+      class="pointer-events-auto max-w-97.5 rounded-lg border px-4 py-2 text-[12px] font-medium shadow-lg backdrop-blur-md"
       :class="{
         'border-outline-variant/40 bg-surface-container-high text-on-surface': toast.tone === 'info',
         'border-emerald-400/40 bg-emerald-950/90 text-emerald-200': toast.tone === 'success',

@@ -16,7 +16,7 @@ const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>();
     @click="emit('update:modelValue', !modelValue)"
   >
     <span
-      class="absolute top-[2px] left-[2px] h-5 w-5 rounded-full transition-transform"
+      class="absolute top-0.5 left-0.5 h-5 w-5 rounded-full transition-transform"
       :class="modelValue ? 'translate-x-full bg-surface-container-lowest' : 'bg-on-primary-container'"
     ></span>
   </button>

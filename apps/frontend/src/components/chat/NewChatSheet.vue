@@ -69,7 +69,7 @@ async function create(): Promise<void> {
             class="flex w-full items-center gap-3 rounded-xl border border-outline-variant/20 bg-surface-container-low p-2 text-left transition-colors hover:border-primary/40"
             @click="pickCharacter(character)"
           >
-            <span class="flex size-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-container ring-1 ring-outline-variant/30">
+            <span class="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-container ring-1 ring-outline-variant/30">
               <img v-if="character.avatarPath" :src="character.avatarPath" :alt="character.name" class="size-full object-cover" />
               <span v-else class="text-[13px] font-bold text-secondary">{{ character.name.slice(0, 1).toUpperCase() }}</span>
             </span>

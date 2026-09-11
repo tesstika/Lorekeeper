@@ -154,7 +154,7 @@ function toggleSearch(): void {
 </script>
 
 <template>
-  <div class="mx-auto flex min-h-dvh max-w-[520px] flex-col border-x border-outline-variant/20 bg-surface pb-28">
+  <div class="mx-auto flex min-h-dvh max-w-130 flex-col border-x border-outline-variant/20 bg-surface pb-28">
     <header class="sticky top-0 z-40 flex items-center justify-between bg-surface/85 px-5 pb-3 pt-9 backdrop-blur-md">
       <div class="flex items-center gap-2">
         <IconBook class="size-6 text-primary" />
@@ -344,7 +344,7 @@ function toggleSearch(): void {
     <!-- Batch selection action bar -->
     <div
       v-if="selectionMode && selectedIds.length > 0"
-      class="fixed inset-x-0 bottom-16 z-40 mx-auto flex max-w-[520px] items-center justify-between gap-2 border-t border-outline-variant/30 bg-surface/95 px-5 py-3 backdrop-blur-md"
+      class="fixed inset-x-0 bottom-16 z-40 mx-auto flex max-w-130 items-center justify-between gap-2 border-t border-outline-variant/30 bg-surface/95 px-5 py-3 backdrop-blur-md"
     >
       <span class="text-[13px] font-medium text-on-surface">{{ selectedIds.length }} selected</span>
       <div class="flex items-center gap-2">

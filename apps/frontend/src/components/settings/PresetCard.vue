@@ -129,7 +129,7 @@ function saveAsNew(): void {
         <div class="flex items-start justify-between">
           <div class="space-y-1">
             <div class="flex flex-wrap items-center gap-2">
-              <h3 class="text-[16px] font-semibold leading-[22px] text-on-surface">{{ preset.name }}</h3>
+              <h3 class="text-[16px] font-semibold leading-5.5 text-on-surface">{{ preset.name }}</h3>
               <span
                 v-if="preset.id === selectedId"
                 class="rounded-full bg-primary-container px-2 py-0.5 text-[11px] font-semibold tracking-wide text-on-primary"
@@ -143,7 +143,7 @@ function saveAsNew(): void {
                 <IconCheck class="size-3" /> Default
               </span>
             </div>
-            <p v-if="preset.description" class="text-[11px] leading-[14px] text-secondary">{{ preset.description }}</p>
+            <p v-if="preset.description" class="text-[11px] leading-3.5 text-secondary">{{ preset.description }}</p>
           </div>
           <div class="flex items-center gap-1">
             <button
@@ -197,11 +197,11 @@ function saveAsNew(): void {
       <button
         v-if="!showSaveAsNew"
         type="button"
-        class="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-outline-variant/60 bg-surface-container-low/40 py-3 text-[13px] leading-[18px] font-medium text-secondary transition-all hover:border-primary hover:bg-surface-container-low hover:text-primary"
+        class="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-outline-variant/60 bg-surface-container-low/40 py-3 text-[13px] leading-4.5 font-medium text-secondary transition-all hover:border-primary hover:bg-surface-container-low hover:text-primary"
         aria-label="Save current values as a new preset"
         @click="showSaveAsNew = true"
       >
-        <IconBookmarkAdd class="size-[18px]" />
+        <IconBookmarkAdd class="size-4.5" />
         + Save Current as New Preset
       </button>
       <div

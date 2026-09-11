@@ -172,7 +172,7 @@ async function onActivate(messageId: string, variantId: string): Promise<void> {
 </script>
 
 <template>
-  <div class="mx-auto flex h-dvh max-w-[390px] flex-col border-x border-outline-variant/20 bg-surface">
+  <div class="mx-auto flex h-dvh max-w-97.5 flex-col border-x border-outline-variant/20 bg-surface">
     <header class="z-40 border-b border-outline-variant/30 px-4 pb-2 pt-9">
       <nav class="flex items-center justify-between">
         <button
@@ -184,7 +184,7 @@ async function onActivate(messageId: string, variantId: string): Promise<void> {
           <svg viewBox="0 0 24 24" class="size-6 fill-none stroke-current stroke-2"><path d="m15 18-6-6 6-6" /></svg>
         </button>
         <div class="flex min-w-0 flex-1 items-center gap-2.5 px-2">
-          <div class="size-8 flex-shrink-0 overflow-hidden rounded-full bg-surface-container ring-1 ring-primary/40">
+          <div class="size-8 shrink-0 overflow-hidden rounded-full bg-surface-container ring-1 ring-primary/40">
             <img v-if="character?.avatarPath" :src="character.avatarPath" :alt="character.name" class="size-full object-cover" />
             <span v-else class="flex size-full items-center justify-center text-[11px] font-bold text-secondary">
               {{ (character?.name ?? '?').slice(0, 1).toUpperCase() }}
@@ -193,7 +193,7 @@ async function onActivate(messageId: string, variantId: string): Promise<void> {
           <span class="truncate text-[15px] font-semibold text-on-surface">
             {{ detail?.chat.title ?? character?.name ?? '…' }}
           </span>
-          <span class="flex flex-shrink-0 items-center gap-1 rounded-full border border-outline-variant/30 bg-surface-container-high px-2 py-0.5 text-[10.5px] font-medium text-primary">
+          <span class="flex shrink-0 items-center gap-1 rounded-full border border-outline-variant/30 bg-surface-container-high px-2 py-0.5 text-[10.5px] font-medium text-primary">
             <span
               class="size-1.5 rounded-full bg-primary"
               :class="streaming.isStreaming ? 'animate-pulse' : ''"

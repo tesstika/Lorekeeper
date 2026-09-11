@@ -4,9 +4,9 @@ import * as schema from './schema';
 
 export function createDb(filePath: string) {
   const sqlite = new Database(filePath, { create: true });
-  sqlite.exec('PRAGMA journal_mode = WAL;');
-  sqlite.exec('PRAGMA foreign_keys = ON;');
-  sqlite.exec('PRAGMA busy_timeout = 5000;');
+  sqlite.run('PRAGMA journal_mode = WAL;');
+  sqlite.run('PRAGMA foreign_keys = ON;');
+  sqlite.run('PRAGMA busy_timeout = 5000;');
   const db = drizzle({ client: sqlite, schema, casing: 'snake_case' });
   return { db, sqlite };
 }

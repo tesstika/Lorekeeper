@@ -26,8 +26,8 @@ function update(patch: Parameters<typeof store.updateComposer>[0]): void {
       <!-- Enter sends message -->
       <div class="flex items-center justify-between p-3.5">
         <div class="pr-4">
-          <span class="text-[16px] font-semibold leading-[22px] text-on-surface">Enter sends message</span>
-          <p class="mt-0.5 text-[11px] leading-[14px] text-secondary">
+          <span class="text-[16px] font-semibold leading-5.5 text-on-surface">Enter sends message</span>
+          <p class="mt-0.5 text-[11px] leading-3.5 text-secondary">
             Shift + Enter creates a new paragraph line.
           </p>
         </div>
@@ -41,8 +41,8 @@ function update(patch: Parameters<typeof store.updateComposer>[0]): void {
       <!-- Auto-scroll -->
       <div class="flex items-center justify-between p-3.5">
         <div class="pr-4">
-          <span class="text-[16px] font-semibold leading-[22px] text-on-surface">Auto-scroll on response stream</span>
-          <p class="mt-0.5 text-[11px] leading-[14px] text-secondary">
+          <span class="text-[16px] font-semibold leading-5.5 text-on-surface">Auto-scroll on response stream</span>
+          <p class="mt-0.5 text-[11px] leading-3.5 text-secondary">
             Keeps the view anchored to the prose generation front.
           </p>
         </div>
@@ -56,8 +56,8 @@ function update(patch: Parameters<typeof store.updateComposer>[0]): void {
       <!-- Edit default regenerate (D8) -->
       <div class="flex items-center justify-between p-3.5">
         <div class="pr-4">
-          <span class="text-[16px] font-semibold leading-[22px] text-on-surface">Edit defaults to regenerate</span>
-          <p class="mt-0.5 text-[11px] leading-[14px] text-secondary">
+          <span class="text-[16px] font-semibold leading-5.5 text-on-surface">Edit defaults to regenerate</span>
+          <p class="mt-0.5 text-[11px] leading-3.5 text-secondary">
             The edit dialog defaults to “Save &amp; regenerate after” instead of Save.
           </p>
         </div>
@@ -72,8 +72,8 @@ function update(patch: Parameters<typeof store.updateComposer>[0]): void {
       <div class="space-y-2 p-3.5">
         <div class="flex items-center justify-between">
           <div>
-            <span class="text-[16px] font-semibold leading-[22px] text-on-surface">Caret blink interval</span>
-            <p class="mt-0.5 text-[11px] leading-[14px] text-secondary">
+            <span class="text-[16px] font-semibold leading-5.5 text-on-surface">Caret blink interval</span>
+            <p class="mt-0.5 text-[11px] leading-3.5 text-secondary">
               Streaming caret blink period while text arrives.
             </p>
           </div>
@@ -96,8 +96,8 @@ function update(patch: Parameters<typeof store.updateComposer>[0]): void {
       <div class="space-y-2 p-3.5">
         <div class="flex items-center justify-between">
           <div>
-            <span class="text-[16px] font-semibold leading-[22px] text-on-surface">Delivered blink interval</span>
-            <p class="mt-0.5 text-[11px] leading-[14px] text-secondary">
+            <span class="text-[16px] font-semibold leading-5.5 text-on-surface">Delivered blink interval</span>
+            <p class="mt-0.5 text-[11px] leading-3.5 text-secondary">
               Post-stream “delivered” dot blink period.
             </p>
           </div>
@@ -119,8 +119,8 @@ function update(patch: Parameters<typeof store.updateComposer>[0]): void {
       <!-- Delivered blink count -->
       <div class="flex items-center justify-between p-3.5">
         <div>
-          <span class="text-[16px] font-semibold leading-[22px] text-on-surface">Delivered blink count</span>
-          <p class="mt-0.5 text-[11px] leading-[14px] text-secondary">
+          <span class="text-[16px] font-semibold leading-5.5 text-on-surface">Delivered blink count</span>
+          <p class="mt-0.5 text-[11px] leading-3.5 text-secondary">
             How many times the delivered dot blinks before settling.
           </p>
         </div>

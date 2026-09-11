@@ -67,7 +67,7 @@ function openChat(id: string): void {
 </script>
 
 <template>
-  <div class="mx-auto flex min-h-dvh max-w-[390px] flex-col border-x border-outline-variant/20 bg-surface pb-24">
+  <div class="mx-auto flex min-h-dvh max-w-97.5 flex-col border-x border-outline-variant/20 bg-surface pb-24">
     <header class="sticky top-0 z-40 flex items-center justify-between bg-surface/85 px-5 pb-3 pt-9 backdrop-blur-md">
       <div class="flex items-center gap-2">
         <svg viewBox="0 0 24 24" class="size-6 fill-none stroke-primary stroke-2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" /></svg>
@@ -99,7 +99,7 @@ function openChat(id: string): void {
         v-for="tab in tabs"
         :key="tab.id"
         type="button"
-        class="flex-shrink-0 rounded-full border px-3.5 py-1.5 text-[13px] transition-colors"
+        class="shrink-0 rounded-full border px-3.5 py-1.5 text-[13px] transition-colors"
         :class="activeTab === tab.id
           ? 'border-primary/30 bg-secondary-container text-primary'
           : 'border-outline-variant/30 bg-surface-container-low text-secondary hover:text-primary'"
@@ -129,7 +129,7 @@ function openChat(id: string): void {
           class="flex animate-pulse items-start gap-3 rounded-xl border border-outline-variant/15 bg-surface-container-low p-3"
           aria-hidden="true"
         >
-          <div class="size-[52px] flex-shrink-0 rounded-full bg-surface-container-high" />
+          <div class="size-13 shrink-0 rounded-full bg-surface-container-high" />
           <div class="flex-1 space-y-2 py-1">
             <div class="h-3.5 w-2/5 rounded bg-surface-container-high" />
             <div class="h-2.5 w-1/4 rounded bg-surface-container" />
@@ -167,8 +167,8 @@ function openChat(id: string): void {
         @click="openChat(chat.id)"
       >
         <div class="flex items-start gap-3">
-          <div class="relative flex-shrink-0">
-            <div class="size-[52px] rounded-full bg-gradient-to-tr from-primary-container/80 via-outline-variant/50 to-tertiary/70 p-[2px]">
+          <div class="relative shrink-0">
+            <div class="size-13 rounded-full bg-linear-to-tr from-primary-container/80 via-outline-variant/50 to-tertiary/70 p-0.5">
               <img
                 v-if="chat.characterAvatarPath"
                 :src="chat.characterAvatarPath"
@@ -190,7 +190,7 @@ function openChat(id: string): void {
               <h2 class="truncate text-[15px] font-semibold text-on-surface transition-colors group-hover:text-primary">
                 {{ chat.title }}
               </h2>
-              <time class="flex-shrink-0 text-[11px] text-outline">{{ formatRelativeTime(chat.lastMessageAt) }}</time>
+              <time class="shrink-0 text-[11px] text-outline">{{ formatRelativeTime(chat.lastMessageAt) }}</time>
             </div>
             <div class="mb-1.5 flex items-center gap-2">
               <span class="rounded border border-outline-variant/30 bg-surface-container-high px-2 py-0.5 text-[10px] tracking-wide text-on-surface-variant">
@@ -209,7 +209,7 @@ function openChat(id: string): void {
     <button
       type="button"
       aria-label="Begin a New Tale"
-      class="fixed bottom-24 right-5 z-40 mx-auto flex w-[calc(100%-2.5rem)] max-w-[340px] items-center justify-center gap-2 rounded-full bg-primary py-3.5 text-[15px] font-semibold text-on-primary shadow-lg transition active:scale-95"
+      class="fixed bottom-24 right-5 z-40 mx-auto flex w-[calc(100%-2.5rem)] max-w-85 items-center justify-center gap-2 rounded-full bg-primary py-3.5 text-[15px] font-semibold text-on-primary shadow-lg transition active:scale-95"
       @click="newChatOpen = true"
     >
       <svg viewBox="0 0 24 24" class="size-5 fill-none stroke-current stroke-2" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>

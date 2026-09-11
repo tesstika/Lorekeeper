@@ -63,7 +63,7 @@ const genreTag = () => props.character.tags[0] ?? null;
       :aria-label="`Open ${character.name}`"
       @click="onActivate"
     >
-      <div class="relative aspect-[4/3] w-full overflow-hidden bg-surface-container-low">
+      <div class="relative aspect-4/3 w-full overflow-hidden bg-surface-container-low">
         <img
           v-if="character.avatarPath"
           :src="character.avatarPath"
@@ -72,7 +72,7 @@ const genreTag = () => props.character.tags[0] ?? null;
         />
         <div
           v-else
-          class="flex h-full w-full items-center justify-center bg-gradient-to-br from-secondary-container/60 to-surface-container-lowest"
+          class="flex h-full w-full items-center justify-center bg-linear-to-br from-secondary-container/60 to-surface-container-lowest"
         >
           <span class="font-serif text-3xl text-primary/80">{{ initialsOf(character.name) }}</span>
         </div>

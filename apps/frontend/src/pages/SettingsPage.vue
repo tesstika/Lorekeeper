@@ -38,11 +38,11 @@ function resetToDefaults(): void {
 </script>
 
 <template>
-  <div class="mx-auto min-h-dvh max-w-[390px] border-x border-outline-variant/20 bg-surface pb-24">
+  <div class="mx-auto min-h-dvh max-w-97.5 border-x border-outline-variant/20 bg-surface pb-24">
     <header class="sticky top-0 z-40 flex items-center justify-between border-b border-outline-variant/30 bg-surface/85 px-5 pb-3 pt-9 backdrop-blur-md">
       <div class="flex items-center gap-2">
         <IconSliders class="size-5 text-primary" />
-        <h1 class="text-[20px] font-bold leading-[28px] tracking-tight text-primary">Settings</h1>
+        <h1 class="text-[20px] font-bold leading-7 tracking-tight text-primary">Settings</h1>
       </div>
       <button
         type="button"
@@ -64,7 +64,7 @@ function resetToDefaults(): void {
       <!-- Sanctum status summary -->
       <div class="flex items-start justify-between">
         <div>
-          <span class="text-[11px] font-medium uppercase leading-[14px] tracking-wider text-secondary">
+          <span class="text-[11px] font-medium uppercase leading-3.5 tracking-wider text-secondary">
             Sanctum Codex Configuration
           </span>
           <p class="mt-0.5 font-serif text-sm leading-6 text-on-surface-variant">
@@ -78,7 +78,7 @@ function resetToDefaults(): void {
             class="h-2 w-2 rounded-full"
             :class="store.engineReady ? 'animate-pulse bg-emerald-400' : 'bg-outline-variant'"
           ></span>
-          <span class="text-[11px] leading-[14px]" :class="store.engineReady ? 'text-emerald-300' : 'text-secondary'">
+          <span class="text-[11px] leading-3.5" :class="store.engineReady ? 'text-emerald-300' : 'text-secondary'">
             {{ store.engineReady ? 'Engine Ready' : 'Setup Needed' }}
           </span>
         </div>
@@ -104,7 +104,7 @@ function resetToDefaults(): void {
       </div>
 
       <!-- Archival version stamp -->
-      <div class="space-y-1 pb-2 pt-4 text-center text-[11px] leading-[14px] text-secondary">
+      <div class="space-y-1 pb-2 pt-4 text-center text-[11px] leading-3.5 text-secondary">
         <p>Lorekeeper Sanctum • v{{ APP_VERSION }}</p>
         <p class="text-[10px] text-outline">
           Created by Testika · MIT · keys encrypted at rest (AES-256-GCM)

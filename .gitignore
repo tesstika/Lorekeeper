@@ -27,5 +27,6 @@ Thumbs.db
 .playwright-mcp/
 temp/
 IMPLEMENTATION_PLAN.md
+DEVELOPER_NOTES.md
 M*_AUDIT_SIGNOFF.md
 M*_REPORT.md

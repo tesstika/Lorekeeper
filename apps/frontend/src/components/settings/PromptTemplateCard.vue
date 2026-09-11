@@ -86,7 +86,7 @@ function insertVariable(variable: PromptVariable): void {
       <!-- System template -->
       <div class="space-y-2 p-3.5">
         <div class="flex items-center justify-between">
-          <span class="text-[16px] font-semibold leading-[22px] text-on-surface">System prompt template</span>
+          <span class="text-[16px] font-semibold leading-5.5 text-on-surface">System prompt template</span>
           <span v-if="savedLabel" class="text-[11px] text-emerald-300">{{ savedLabel }}</span>
         </div>
         <div class="flex flex-wrap gap-1.5">
@@ -111,15 +111,15 @@ function insertVariable(variable: PromptVariable): void {
           spellcheck="false"
           @input="onSystemInput"
         ></textarea>
-        <p class="text-[11px] leading-[14px] text-outline">
+        <p class="text-[11px] leading-3.5 text-outline">
           Sections written as <span class="font-mono">{{ '\u007B\u007B#tagline\u007D\u007D…\u007B\u007B/tagline\u007D\u007D' }}</span> are omitted when empty.
         </p>
       </div>
 
       <!-- Post-history instructions -->
       <div class="space-y-2 p-3.5">
-        <span class="text-[16px] font-semibold leading-[22px] text-on-surface">Post-history instructions</span>
-        <p class="text-[11px] leading-[14px] text-secondary">
+        <span class="text-[16px] font-semibold leading-5.5 text-on-surface">Post-history instructions</span>
+        <p class="text-[11px] leading-3.5 text-secondary">
           Appended as the final system message after the chat history (the “jailbreak” slot).
         </p>
         <textarea

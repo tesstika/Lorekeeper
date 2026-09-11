@@ -15,7 +15,7 @@ const { token } = useOverlayA11y(() => true, { onEscape: () => emit('close') });
 <template>
   <div
     :data-lk-overlay="token"
-    class="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4 backdrop-blur-md"
+    class="fixed inset-0 z-70 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md"
     role="dialog"
     aria-modal="true"
     :aria-label="`Image viewer — ${attachment.originalName}`"

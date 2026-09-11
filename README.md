@@ -37,7 +37,7 @@ The SQLite database and media live in `data/` (created on first boot, never comm
 ### Production (single process)
 
 `bun run build` compiles the SPA into `apps/frontend/dist`; `bun run start` then serves the SPA and
-the API from one Fastify process on **http://127.0.0.1:3000**. On Windows, `start.bat` wraps the
+the API from one Fastify process on **<http://127.0.0.1:3000>**. On Windows, `start.bat` wraps the
 whole flow — it checks for Bun, builds the frontend if missing, and opens the browser.
 
 ## Dev notes (Windows)

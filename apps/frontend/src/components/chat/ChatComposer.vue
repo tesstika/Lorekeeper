@@ -143,7 +143,7 @@ function onKeydown(event: KeyboardEvent): void {
     <div v-if="pending.length > 0 || streaming.isStreaming" class="flex items-center justify-between px-1 pb-2">
       <div class="flex items-center gap-2">
         <div v-for="attachment in pending" :key="attachment.id" class="relative inline-flex items-center">
-          <div class="size-12 flex-shrink-0 overflow-hidden rounded-lg border border-amber-500/40 bg-surface-container shadow-md">
+          <div class="size-12 shrink-0 overflow-hidden rounded-lg border border-amber-500/40 bg-surface-container shadow-md">
             <img :src="attachment.url" :alt="attachment.originalName" class="size-full object-cover" />
           </div>
           <button
@@ -182,7 +182,7 @@ function onKeydown(event: KeyboardEvent): void {
         type="button"
         aria-label="Attach image"
         title="Attach image"
-        class="flex size-9 flex-shrink-0 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-primary"
+        class="flex size-9 shrink-0 items-center justify-center rounded-lg text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-primary"
         :class="visionState === 'no' ? 'cursor-not-allowed opacity-40' : ''"
         @click="pickFiles"
       >
@@ -216,7 +216,7 @@ function onKeydown(event: KeyboardEvent): void {
       <button
         type="button"
         aria-label="Send message"
-        class="flex size-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-amber-600 to-amber-400 font-bold text-[#1f1608] shadow-md transition active:scale-95 disabled:opacity-40"
+        class="flex size-9 shrink-0 items-center justify-center rounded-full bg-linear-to-tr from-amber-600 to-amber-400 font-bold text-[#1f1608] shadow-md transition active:scale-95 disabled:opacity-40"
         :disabled="!canSend"
         @click="submit()"
       >
