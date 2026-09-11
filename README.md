@@ -30,6 +30,7 @@ bun run db:generate  # generate SQL migration from the Drizzle schema
 bun run db:migrate   # apply migrations manually (the server also migrates on boot)
 bun run build        # build the SPA
 bun run start        # serve built SPA + API on http://127.0.0.1:3000
+bun run start:lan    # launching a local environment to access the site from other devices
 ```
 
 The SQLite database and media live in `data/` (created on first boot, never committed).

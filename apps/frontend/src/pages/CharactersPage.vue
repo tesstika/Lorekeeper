@@ -154,7 +154,7 @@ function toggleSearch(): void {
 </script>
 
 <template>
-  <div class="mx-auto flex min-h-dvh max-w-130 flex-col border-x border-outline-variant/20 bg-surface pb-28">
+  <div class="mx-auto flex min-h-dvh max-w-97.5 flex-col border-x border-outline-variant/20 bg-surface pb-28">
     <header class="sticky top-0 z-40 flex items-center justify-between bg-surface/85 px-5 pb-3 pt-9 backdrop-blur-md">
       <div class="flex items-center gap-2">
         <IconBook class="size-6 text-primary" />
@@ -344,7 +344,7 @@ function toggleSearch(): void {
     <!-- Batch selection action bar -->
     <div
       v-if="selectionMode && selectedIds.length > 0"
-      class="fixed inset-x-0 bottom-16 z-40 mx-auto flex max-w-130 items-center justify-between gap-2 border-t border-outline-variant/30 bg-surface/95 px-5 py-3 backdrop-blur-md"
+      class="fixed inset-x-0 bottom-16 z-40 mx-auto flex max-w-97.5 items-center justify-between gap-2 border-t border-outline-variant/30 bg-surface/95 px-5 py-3 backdrop-blur-md"
     >
       <span class="text-[13px] font-medium text-on-surface">{{ selectedIds.length }} selected</span>
       <div class="flex items-center gap-2">
@@ -375,14 +375,18 @@ function toggleSearch(): void {
       </div>
     </div>
 
-    <button
-      type="button"
-      aria-label="Forge new companion or persona"
-      class="fixed right-5 bottom-24 z-40 flex size-14 items-center justify-center rounded-full bg-primary-container text-on-primary-container shadow-[0_8px_24px_-4px_rgba(217,119,6,0.35)] transition-all hover:opacity-95 active:scale-95"
-      @click="newEntity"
-    >
-      <IconPlus class="size-6" />
-    </button>
+    <!-- Fixed to the viewport but constrained to the page column (batch-bar
+         pattern) so the FAB stays inside the phone frame on desktop. -->
+    <div class="pointer-events-none fixed inset-x-0 bottom-24 z-40 mx-auto flex max-w-97.5 justify-end px-5">
+      <button
+        type="button"
+        aria-label="Forge new companion or persona"
+        class="pointer-events-auto flex size-14 items-center justify-center rounded-full bg-primary-container text-on-primary-container shadow-[0_8px_24px_-4px_rgba(217,119,6,0.35)] transition-all hover:opacity-95 active:scale-95"
+        @click="newEntity"
+      >
+        <IconPlus class="size-6" />
+      </button>
+    </div>
 
     <BottomNav />
     <ToastHost />

@@ -38,6 +38,11 @@
 
   --font-sans: "Plus Jakarta Sans Variable", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Source Serif 4 Variable", ui-serif, Georgia, serif;
+  /* Tailwind's default mono stack requests the locally installed "Liberation
+     Mono", which Gecko font-visibility protection (Waterfox fingerprint
+     protection, level 2) blocks with a console warning. Trim the stack to
+     families that resolve on every platform (Courier New is OS-standard). */
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Courier New", monospace;
 
   --radius-lg: 0.5rem;
   --radius-xl: 0.75rem;

@@ -206,15 +206,19 @@ function openChat(id: string): void {
       </article>
     </main>
 
-    <button
-      type="button"
-      aria-label="Begin a New Tale"
-      class="fixed bottom-24 right-5 z-40 mx-auto flex w-[calc(100%-2.5rem)] max-w-85 items-center justify-center gap-2 rounded-full bg-primary py-3.5 text-[15px] font-semibold text-on-primary shadow-lg transition active:scale-95"
-      @click="newChatOpen = true"
-    >
-      <svg viewBox="0 0 24 24" class="size-5 fill-none stroke-current stroke-2" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
-      New Tale
-    </button>
+    <!-- Fixed to the viewport but constrained to the page column (BottomNav
+         pattern) so the pill stays inside the phone frame on desktop. -->
+    <div class="pointer-events-none fixed inset-x-0 bottom-24 z-40 mx-auto flex max-w-97.5 justify-end px-5">
+      <button
+        type="button"
+        aria-label="Begin a New Tale"
+        class="pointer-events-auto flex w-full max-w-85 items-center justify-center gap-2 rounded-full bg-primary py-3.5 text-[15px] font-semibold text-on-primary shadow-lg transition active:scale-95"
+        @click="newChatOpen = true"
+      >
+        <svg viewBox="0 0 24 24" class="size-5 fill-none stroke-current stroke-2" aria-hidden="true"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+        New Tale
+      </button>
+    </div>
 
     <NewChatSheet
       :open="newChatOpen"

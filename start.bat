@@ -3,8 +3,16 @@ setlocal
 title Lorekeeper
 
 rem Lorekeeper launcher - single-process production server on http://127.0.0.1:3000
+rem Run "start.bat lan" to also expose the server to your LAN (phone/tablet access).
 
 cd /d "%~dp0"
+
+rem --- 0. Optional LAN mode: start.bat lan ---
+set "BINDHOST=127.0.0.1"
+if /i "%~1"=="lan" (
+  set "BINDHOST=0.0.0.0"
+  set "HOST=0.0.0.0"
+)
 
 rem --- 1. Bun must be on PATH ---
 where bun >nul 2>nul
@@ -30,7 +38,12 @@ if not exist "apps\frontend\dist\index.html" (
   )
 )
 
-echo [Lorekeeper] Starting server on http://127.0.0.1:3000 ...
+if "%BINDHOST%"=="0.0.0.0" (
+  echo [Lorekeeper] Starting server in LAN mode - open the http://^<PC-IP^>:3000 URL
+  echo [Lorekeeper] printed below on your phone ^(same Wi-Fi network^).
+) else (
+  echo [Lorekeeper] Starting server on http://127.0.0.1:3000 ...
+)
 echo [Lorekeeper] Press Ctrl+C in this window to stop.
 echo.
 
