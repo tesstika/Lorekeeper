@@ -3,6 +3,8 @@ import {
   composerSchema,
   type GlobalDefaultsPatch,
   globalDefaultsSchema,
+  type ImageCaptioningPatchValue,
+  imageCaptioningSchema,
   type Preset,
   type PresetCreateInput,
   type PresetPatch,
@@ -12,6 +14,7 @@ import {
   type ProviderModelsResponse,
   presetInputSchema,
   promptTemplateSchema,
+  type SettingsPatch,
   type SettingsResponse,
   type TestConnectionResponse,
 } from '@lorekeeper/shared';
@@ -51,6 +54,9 @@ export const useSettingsStore = defineStore('settings', () => {
   const composer = computed(() => settings.value?.composer ?? composerSchema.parse({}));
   const promptTemplate = computed(
     () => settings.value?.promptTemplate ?? promptTemplateSchema.parse({}),
+  );
+  const imageCaptioning = computed(
+    () => settings.value?.imageCaptioning ?? imageCaptioningSchema.parse({}),
   );
 
   const activeProviderId = computed(() => globalDefaults.value.providerId);
@@ -121,11 +127,15 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   async function patchSettings(
-    section: 'globalDefaults' | 'promptTemplate' | 'composer',
-    patch: Partial<GlobalDefaultsPatch & PromptTemplatePatch & ComposerPatch>,
+    section: 'globalDefaults' | 'promptTemplate' | 'composer' | 'imageCaptioning',
+    patch:
+      | Partial<GlobalDefaultsPatch>
+      | PromptTemplatePatch
+      | ComposerPatch
+      | ImageCaptioningPatchValue,
   ): Promise<void> {
     try {
-      settings.value = await api.patchSettings({ [section]: patch });
+      settings.value = await api.patchSettings({ [section]: patch } as SettingsPatch);
     } catch (error) {
       ui.notify(describeApiError(error), 'error');
       throw error;
@@ -144,11 +154,16 @@ export const useSettingsStore = defineStore('settings', () => {
     return patchSettings('composer', patch);
   }
 
-  /** Resets the three editable sections to their schema defaults (Settings → Reset). */
+  function updateImageCaptioning(patch: ImageCaptioningPatchValue): Promise<void> {
+    return patchSettings('imageCaptioning', patch);
+  }
+
+  /** Resets the editable sections to their schema defaults (Settings → Reset). */
   async function resetToDefaults(): Promise<void> {
     await patchSettings('globalDefaults', globalDefaultsSchema.parse({}));
     await patchSettings('promptTemplate', promptTemplateSchema.parse({}));
     await patchSettings('composer', composerSchema.parse({}));
+    await patchSettings('imageCaptioning', imageCaptioningSchema.parse({}));
     syncWorkingPreset();
     ui.notify('Settings restored to defaults', 'success');
   }
@@ -263,6 +278,7 @@ export const useSettingsStore = defineStore('settings', () => {
     globalDefaults,
     composer,
     promptTemplate,
+    imageCaptioning,
     activeProviderId,
     activeModelId,
     activePresetId,
@@ -276,6 +292,7 @@ export const useSettingsStore = defineStore('settings', () => {
     updateGlobalDefaults,
     updatePromptTemplate,
     updateComposer,
+    updateImageCaptioning,
     resetToDefaults,
     refreshProviders,
     saveProviderKey,

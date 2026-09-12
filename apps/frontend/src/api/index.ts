@@ -15,6 +15,7 @@ import type {
   EditMessageResponse,
   ImportCardResponse,
   MessageInput,
+  OllamaModelStateResponse,
   OllamaModelsResponse,
   OllamaStatusResponse,
   Persona,
@@ -97,6 +98,11 @@ export const api = {
   // -- Ollama (local provider) ------------------------------------------------
   getOllamaStatus: () => request<OllamaStatusResponse>('GET', '/providers/ollama/status'),
   getOllamaModels: () => request<OllamaModelsResponse>('GET', '/providers/ollama/models'),
+  getOllamaModelState: (tag: string) =>
+    request<OllamaModelStateResponse>(
+      'GET',
+      `/providers/ollama/model-state?tag=${encodeURIComponent(tag)}`,
+    ),
 
   getPresets: () => request<Preset[]>('GET', '/presets'),
   createPreset: (input: PresetCreateInput) => request<Preset>('POST', '/presets', input),

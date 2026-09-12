@@ -415,51 +415,53 @@ function contextTag(model: ModelInfo): string | null {
               </span>
             </button>
 
-            <!-- Ollama: download state / live pull progress (feature spec §2). -->
-            <div v-if="row.pull && (row.pull.active || row.pull.error)" class="w-32 shrink-0 space-y-1">
-              <div class="flex items-center justify-between gap-1 text-[10px] leading-3.5">
-                <span class="truncate" :class="row.pull.error ? 'text-error' : 'text-secondary'">{{ row.pull.status }}</span>
-                <span class="font-mono text-primary">{{ row.percent }}%</span>
+            <!-- Ollama only: download state / live pull progress (feature spec §2). -->
+            <template v-if="isOllama">
+              <div v-if="row.pull && (row.pull.active || row.pull.error)" class="w-32 shrink-0 space-y-1">
+                <div class="flex items-center justify-between gap-1 text-[10px] leading-3.5">
+                  <span class="truncate" :class="row.pull.error ? 'text-error' : 'text-secondary'">{{ row.pull.status }}</span>
+                  <span class="font-mono text-primary">{{ row.percent }}%</span>
+                </div>
+                <div class="h-1.5 w-full overflow-hidden rounded-full bg-surface-container-highest">
+                  <div
+                    class="h-full rounded-full"
+                    :class="row.pull.error ? 'bg-error' : 'bg-primary'"
+                    :style="{ width: `${row.percent}%` }"
+                  ></div>
+                </div>
+                <div class="flex items-center justify-between gap-1">
+                  <span class="truncate font-mono text-[10px] text-outline">
+                    {{ formatBytes(row.pull.completed) ?? '…' }} / {{ formatBytes(row.pull.total) ?? '…' }}
+                  </span>
+                  <button
+                    v-if="row.pull.active"
+                    type="button"
+                    class="shrink-0 text-[10px] text-on-surface-variant transition-colors hover:text-error"
+                    :aria-label="`Cancel download of ${row.model.name}`"
+                    @click="ollama.cancelPull(row.model.id)"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
-              <div class="h-1.5 w-full overflow-hidden rounded-full bg-surface-container-highest">
-                <div
-                  class="h-full rounded-full"
-                  :class="row.pull.error ? 'bg-error' : 'bg-primary'"
-                  :style="{ width: `${row.percent}%` }"
-                ></div>
+              <div
+                v-else-if="row.downloaded"
+                class="flex shrink-0 items-center gap-1 rounded-full bg-emerald-900/30 px-2 py-0.5 text-[10px] font-medium text-emerald-300"
+              >
+                <IconCheck class="size-3" /> Downloaded
+                <span v-if="row.sizeLabel" class="font-mono text-outline">{{ row.sizeLabel }}</span>
               </div>
-              <div class="flex items-center justify-between gap-1">
-                <span class="truncate font-mono text-[10px] text-outline">
-                  {{ formatBytes(row.pull.completed) ?? '…' }} / {{ formatBytes(row.pull.total) ?? '…' }}
-                </span>
-                <button
-                  v-if="row.pull.active"
-                  type="button"
-                  class="shrink-0 text-[10px] text-on-surface-variant transition-colors hover:text-error"
-                  :aria-label="`Cancel download of ${row.model.name}`"
-                  @click="ollama.cancelPull(row.model.id)"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-            <div
-              v-else-if="row.downloaded"
-              class="flex shrink-0 items-center gap-1 rounded-full bg-emerald-900/30 px-2 py-0.5 text-[10px] font-medium text-emerald-300"
-            >
-              <IconCheck class="size-3" /> Downloaded
-              <span v-if="row.sizeLabel" class="font-mono text-outline">{{ row.sizeLabel }}</span>
-            </div>
-            <button
-              v-else
-              type="button"
-              class="flex shrink-0 items-center gap-1 rounded-md border border-outline-variant/40 bg-surface-container px-2 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-surface-container-high"
-              :aria-label="`Download ${row.model.name}`"
-              @click="downloadModel(row.model.id)"
-            >
-              <IconDownload class="size-3" />
-              Download
-            </button>
+              <button
+                v-else
+                type="button"
+                class="flex shrink-0 items-center gap-1 rounded-md border border-outline-variant/40 bg-surface-container px-2 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-surface-container-high"
+                :aria-label="`Download ${row.model.name}`"
+                @click="downloadModel(row.model.id)"
+              >
+                <IconDownload class="size-3" />
+                Download
+              </button>
+            </template>
           </div>
         </div>
         <div class="border-t border-outline-variant/25 px-4 py-2 text-[11px] text-outline">

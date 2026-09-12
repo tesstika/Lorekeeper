@@ -3,6 +3,7 @@ import { APP_VERSION } from '@lorekeeper/shared';
 import { onMounted, ref } from 'vue';
 import ComposerCard from '@/components/settings/ComposerCard.vue';
 import EngineCard from '@/components/settings/EngineCard.vue';
+import ImageCaptioningCard from '@/components/settings/ImageCaptioningCard.vue';
 import PresetCard from '@/components/settings/PresetCard.vue';
 import PromptTemplateCard from '@/components/settings/PromptTemplateCard.vue';
 import ProviderKeysCard from '@/components/settings/ProviderKeysCard.vue';
@@ -89,6 +90,7 @@ function resetToDefaults(): void {
         <EngineCard />
         <SamplingCard />
         <ComposerCard />
+        <ImageCaptioningCard />
         <PresetCard />
         <PromptTemplateCard />
       </template>

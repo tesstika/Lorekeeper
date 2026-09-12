@@ -1,5 +1,8 @@
 import {
+  OLLAMA_CAPTIONER_MODEL,
   type OllamaPullProgressEvent,
+  ollamaModelStateQuerySchema,
+  ollamaModelStateResponseSchema,
   ollamaModelsResponseSchema,
   ollamaPullBodySchema,
   ollamaStatusResponseSchema,
@@ -325,6 +328,30 @@ export async function registerProviderRoutes(app: AppInstance): Promise<void> {
     },
   );
 
+  /** Pull state of a single tag (image-captioning card's Moondream2 check). */
+  app.get(
+    '/api/providers/ollama/model-state',
+    {
+      schema: {
+        querystring: ollamaModelStateQuerySchema,
+        response: { 200: ollamaModelStateResponseSchema },
+      },
+    },
+    async (request) => {
+      const status = await fetchOllamaStatus();
+      if (!status.running) {
+        return { running: false, downloaded: false, sizeBytes: null };
+      }
+      const tags = await fetchOllamaTags();
+      const pulled = tags.find((tag) => ollamaTagsMatch(tag.name, request.query.tag));
+      return {
+        running: true,
+        downloaded: pulled !== undefined,
+        sizeBytes: pulled?.size ?? null,
+      };
+    },
+  );
+
   /**
    * Streams a curated model pull as SSE progress frames. Hijacked like the
    * generation endpoints; client disconnect aborts the upstream pull.
@@ -334,7 +361,11 @@ export async function registerProviderRoutes(app: AppInstance): Promise<void> {
     { schema: { body: ollamaPullBodySchema } },
     async (request, reply) => {
       const { modelTag } = request.body;
-      if (!OLLAMA_CURATED_MODELS.some((entry) => entry.tag === modelTag)) {
+      // Curated RP models plus the image-captioning vision helper.
+      const pullable =
+        OLLAMA_CURATED_MODELS.some((entry) => entry.tag === modelTag) ||
+        modelTag === OLLAMA_CAPTIONER_MODEL;
+      if (!pullable) {
         throw httpError(400, 'invalid_model_tag', 'Only curated Lorekeeper models can be pulled.');
       }
       const status = await fetchOllamaStatus();

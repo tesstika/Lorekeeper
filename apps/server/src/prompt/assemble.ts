@@ -69,6 +69,14 @@ export interface BuildPromptOptions {
   /** Attachments of the newest user message (may be empty). */
   finalUserAttachments: AttachmentRow[];
   dataDir: string;
+  /**
+   * Vision-helper toggle (settings.imageCaptioning.enabled): when on, an
+   * uncaptioned attachment is OMITTED for non-vision models instead of the
+   * legacy A1 send-anyway (the caption was expected but unavailable).
+   */
+  imageCaptioningEnabled?: boolean;
+  /** Captioner failure reasons from the pre-pass, shown in prompt warnings. */
+  captionWarnings?: string[];
 }
 
 const SUPPORTED_IMAGE_MIME = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif']);
@@ -91,6 +99,7 @@ function readImageDataUrl(dataDir: string, attachment: AttachmentRow): string | 
  */
 export function buildAssembledPrompt(options: BuildPromptOptions): AssembledPrompt {
   const warnings: string[] = [];
+  if (options.captionWarnings) warnings.push(...options.captionWarnings);
   const preset = options.preset ?? FALLBACK_PRESET;
 
   // Pre-budget for the 25% example-dialogue share uses the raw budget.
@@ -126,37 +135,54 @@ export function buildAssembledPrompt(options: BuildPromptOptions): AssembledProm
     content: message.text,
   }));
 
-  // Multimodal payload: images attach to the FINAL user turn (text part
-  // first, then image parts).
-  const finalUser = [...selection.included].reverse().find((message) => message.role === 'user');
+  // Multimodal payload on the FINAL user turn. Captioned attachments become
+  // plain text ("[Attached image: …]") so text-only models get the visual
+  // context; uncaptioned images ride as base64 parts only when the model has
+  // native vision — or when captioning is off (legacy A1 allow-with-warning).
   if (options.finalUserAttachments.length > 0) {
-    if (!finalUser) {
+    const modalities = options.modelInfo?.inputModalities ?? [];
+    const hasNativeVision = modalities.includes('image');
+    const captionSuffixes: string[] = [];
+    const images: string[] = [];
+
+    for (const attachment of options.finalUserAttachments) {
+      if (attachment.caption) {
+        captionSuffixes.push(`\n\n[Attached image: ${attachment.caption}]`);
+        continue;
+      }
+      if (!hasNativeVision && options.imageCaptioningEnabled === true) {
+        warnings.push(
+          `Attachment "${attachment.originalName}" has no caption and was omitted — the active model does not accept images and the vision helper was unavailable.`,
+        );
+        continue;
+      }
+      const dataUrl = readImageDataUrl(options.dataDir, attachment);
+      if (dataUrl) images.push(dataUrl);
+      else
+        warnings.push(
+          `Attachment ${attachment.originalName} could not be read from disk and was skipped.`,
+        );
+    }
+    if (images.length > 0 && !hasNativeVision) {
+      warnings.push(
+        'This model does not advertise image input (or metadata is unavailable); images are sent anyway and may be rejected (A1).',
+      );
+    }
+
+    const target = historyMessages.findLast((message) => message.role === 'user');
+    if (!target) {
       warnings.push('No user turn available to attach images to; attachments were skipped.');
     } else {
-      const modalities = options.modelInfo?.inputModalities ?? [];
-      if (!modalities.includes('image')) {
-        warnings.push(
-          'This model does not advertise image input (or metadata is unavailable); images are sent anyway and may be rejected (A1).',
-        );
-      }
-      const images: string[] = [];
-      for (const attachment of options.finalUserAttachments) {
-        const dataUrl = readImageDataUrl(options.dataDir, attachment);
-        if (dataUrl) images.push(dataUrl);
-        else
-          warnings.push(
-            `Attachment ${attachment.originalName} could not be read from disk and was skipped.`,
-          );
+      if (captionSuffixes.length > 0) {
+        const base = typeof target.content === 'string' ? target.content : '';
+        target.content = base + captionSuffixes.join('');
       }
       if (images.length > 0) {
-        const target = historyMessages.findLast((message) => message.role === 'user');
-        if (target) {
-          const text = typeof target.content === 'string' ? target.content : '';
-          target.content = [
-            { type: 'text', text },
-            ...images.map((url) => ({ type: 'image_url' as const, imageUrl: { url } })),
-          ];
-        }
+        const text = typeof target.content === 'string' ? target.content : '';
+        target.content = [
+          { type: 'text', text },
+          ...images.map((url) => ({ type: 'image_url' as const, imageUrl: { url } })),
+        ];
       }
     }
   }

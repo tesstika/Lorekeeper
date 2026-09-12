@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { DEFAULT_SYSTEM_TEMPLATE } from '@lorekeeper/shared';
 import { describe, expect, it } from 'vitest';
-import { buildAssembledPrompt, FALLBACK_PRESET } from '../prompt/assemble';
+import { type AssembledPrompt, buildAssembledPrompt, FALLBACK_PRESET } from '../prompt/assemble';
 import {
   computeHistoryBudgetTokens,
   estimateTokens,
@@ -225,6 +225,7 @@ describe('multimodal request assembly (§4.2)', () => {
       width: 1,
       height: 1,
       sizeBytes: png.length,
+      caption: null,
       createdAt: '2026-09-08T00:00:00.000Z',
     };
 
@@ -302,5 +303,127 @@ describe('multimodal request assembly (§4.2)', () => {
     expect(assembled.request.temperature).toBe(FALLBACK_PRESET.temperature);
     expect(assembled.request.maxTokens).toBe(FALLBACK_PRESET.maxTokens);
     expect(assembled.request.topK).toBeUndefined();
+  });
+});
+
+describe('image captioning payload rules (vision helper)', () => {
+  const png = Uint8Array.from([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0,
+    0, 1, 8, 6, 0, 0, 0, 0x1f, 0x15, 0xc4, 0x89,
+  ]);
+
+  function attachment(caption: string | null): {
+    id: string;
+    messageId: string;
+    filePath: string;
+    originalName: string;
+    mimeType: string;
+    width: number;
+    height: number;
+    sizeBytes: number;
+    caption: string | null;
+    createdAt: string;
+  } {
+    return {
+      id: 'att1',
+      messageId: 'm1',
+      filePath: 'media/att1.png',
+      originalName: 'photo.png',
+      mimeType: 'image/png',
+      width: 1,
+      height: 1,
+      sizeBytes: png.length,
+      caption,
+      createdAt: '2026-09-12T00:00:00.000Z',
+    };
+  }
+
+  function build(options: {
+    caption: string | null;
+    inputModalities: string[];
+    imageCaptioningEnabled?: boolean;
+    withFile?: boolean;
+  }): AssembledPrompt {
+    let dir = tmpdir();
+    const cleanup = (): void => {};
+    if (options.withFile) {
+      dir = mkdtempSync(path.join(tmpdir(), 'lk-cap-'));
+      mkdirSync(path.join(dir, 'media'), { recursive: true });
+      writeFileSync(path.join(dir, 'media', 'att1.png'), png);
+    }
+    try {
+      return buildAssembledPrompt({
+        character: makeCharacter() as never,
+        persona: null,
+        promptTemplate: { systemTemplate: 'You are {{char}}.', postHistoryInstructions: '' },
+        globalDefaults: { contextBudgetTokens: 8192 },
+        preset: null,
+        modelInfo: {
+          id: 'm',
+          name: 'M',
+          contextLength: 32000,
+          inputModalities: options.inputModalities,
+        },
+        history: [msg(1, 'user', 'Look at this photo')],
+        finalUserAttachments: [attachment(options.caption)],
+        dataDir: dir,
+        ...(options.imageCaptioningEnabled !== undefined
+          ? { imageCaptioningEnabled: options.imageCaptioningEnabled }
+          : {}),
+      });
+    } finally {
+      cleanup();
+      if (options.withFile) rmSync(dir, { recursive: true, force: true });
+    }
+  }
+
+  it('injects a cached caption as text for a vision model (no base64 part)', () => {
+    const assembled = build({
+      caption: 'A woman smiles by a rainy window.',
+      inputModalities: ['text', 'image'],
+      withFile: true,
+    });
+    const finalTurn = assembled.request.messages.at(-1);
+    expect(typeof finalTurn?.content).toBe('string');
+    expect(String(finalTurn?.content)).toContain(
+      '\n\n[Attached image: A woman smiles by a rainy window.]',
+    );
+    expect(assembled.warnings.join(' ')).not.toContain('image input');
+  });
+
+  it('appends captions for non-vision models without sending base64', () => {
+    const assembled = build({
+      caption: 'A candlelit study desk.',
+      inputModalities: ['text'],
+      imageCaptioningEnabled: true,
+      withFile: true,
+    });
+    const finalTurn = assembled.request.messages.at(-1);
+    expect(typeof finalTurn?.content).toBe('string');
+    expect(String(finalTurn?.content)).toContain('[Attached image: A candlelit study desk.]');
+  });
+
+  it('omits an uncaptioned attachment (with a warning) when captioning is enabled', () => {
+    const assembled = build({
+      caption: null,
+      inputModalities: ['text'],
+      imageCaptioningEnabled: true,
+      withFile: true,
+    });
+    const finalTurn = assembled.request.messages.at(-1);
+    expect(typeof finalTurn?.content).toBe('string');
+    expect(String(finalTurn?.content)).not.toContain('data:image');
+    expect(assembled.warnings.join(' ')).toContain('has no caption and was omitted');
+  });
+
+  it('keeps the A1 send-anyway fallback when captioning is disabled', () => {
+    const assembled = build({
+      caption: null,
+      inputModalities: ['text'],
+      withFile: true,
+    });
+    const finalTurn = assembled.request.messages.at(-1);
+    expect(Array.isArray(finalTurn?.content)).toBe(true);
+    expect(assembled.warnings.join(' ')).toContain('images are sent anyway');
   });
 });

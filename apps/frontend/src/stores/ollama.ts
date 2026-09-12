@@ -1,4 +1,8 @@
-import type { OllamaCuratedModel, OllamaStatusResponse } from '@lorekeeper/shared';
+import type {
+  OllamaCuratedModel,
+  OllamaModelStateResponse,
+  OllamaStatusResponse,
+} from '@lorekeeper/shared';
 import { defineStore } from 'pinia';
 import { computed, ref } from 'vue';
 import { api } from '@/api';
@@ -26,6 +30,8 @@ export const useOllamaStore = defineStore('ollama', () => {
   const statusLoading = ref(false);
   const modelsLoading = ref(false);
   const pulls = ref<Record<string, OllamaPullState>>({});
+  /** Pull state of ad-hoc tags (e.g. the image-captioning vision model). */
+  const modelStates = ref<Record<string, OllamaModelStateResponse>>({});
   const controllers = new Map<string, AbortController>();
 
   const offline = computed(() => status.value !== null && !status.value.running);
@@ -53,6 +59,17 @@ export const useOllamaStore = defineStore('ollama', () => {
     } finally {
       modelsLoading.value = false;
     }
+  }
+
+  /** Pull state of a single ad-hoc tag (not on the curated whitelist). */
+  async function checkModelState(modelTag: string): Promise<OllamaModelStateResponse> {
+    const state = await api.getOllamaModelState(modelTag);
+    modelStates.value = { ...modelStates.value, [modelTag]: state };
+    return state;
+  }
+
+  function modelState(modelTag: string): OllamaModelStateResponse | null {
+    return modelStates.value[modelTag] ?? null;
   }
 
   /** Streams a pull; resolves when the stream ends (success, error or cancel). */
@@ -121,10 +138,13 @@ export const useOllamaStore = defineStore('ollama', () => {
     statusLoading,
     modelsLoading,
     pulls,
+    modelStates,
     offline,
     pullState,
+    modelState,
     checkStatus,
     fetchModels,
+    checkModelState,
     startPull,
     cancelPull,
   };

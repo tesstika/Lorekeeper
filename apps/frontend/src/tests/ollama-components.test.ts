@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defineComponent, nextTick, vaporInteropPlugin } from 'vue';
 import OllamaDownloadModal from '../components/ollama/OllamaDownloadModal.vue';
 import EngineCard from '../components/settings/EngineCard.vue';
+import ImageCaptioningCard from '../components/settings/ImageCaptioningCard.vue';
 import ProviderKeysCard from '../components/settings/ProviderKeysCard.vue';
 import { type OllamaPullState, useOllamaStore } from '../stores/ollama';
 import { useSettingsStore } from '../stores/settings';
@@ -60,16 +61,11 @@ const apiState = vi.hoisted(() => {
       sizeBytes: number | null;
     }>,
     pulledTags: [] as string[],
-    clone: <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T,
-  };
-});
-
-vi.mock('@/api', () => ({
-  ApiError: class ApiError extends Error {
-    code = 'http_error';
-  },
-  api: {
-    getSettings: async () => ({
+    moondreamState: { running: true, downloaded: false, sizeBytes: null } as Record<
+      string,
+      unknown
+    >,
+    settings: {
       globalDefaults: {
         providerId: 'ollama',
         modelId: null,
@@ -88,14 +84,38 @@ vi.mock('@/api', () => ({
         deliveredBlinkMs: 250,
         deliveredBlinks: 6,
       },
-    }),
-    patchSettings: async () => {
-      throw new Error('not used in this suite');
+    } as Record<string, unknown>,
+    providerCatalog: [] as Array<{
+      id: string;
+      name: string;
+      contextLength: number | null;
+      inputModalities: string[];
+    }>,
+    clone: <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T,
+  };
+});
+
+vi.mock('@/api', () => ({
+  ApiError: class ApiError extends Error {
+    code = 'http_error';
+  },
+  api: {
+    getSettings: async () => apiState.clone(apiState.settings),
+    patchSettings: async (patch: Record<string, Record<string, unknown>>) => {
+      for (const [section, value] of Object.entries(patch)) {
+        if (value) {
+          (apiState.settings as Record<string, unknown>)[section] = {
+            ...((apiState.settings as Record<string, unknown>)[section] as Record<string, unknown>),
+            ...value,
+          };
+        }
+      }
+      return apiState.clone(apiState.settings);
     },
     getProviders: async () => apiState.clone(providersFixture),
     getPresets: async () => [],
     getProviderModels: async () => ({
-      models: apiState.clone(catalogModels),
+      models: apiState.clone(apiState.providerCatalog),
       fetchedAt: '2026-09-12T00:00:00.000Z',
       cached: false,
     }),
@@ -104,6 +124,7 @@ vi.mock('@/api', () => ({
       running: apiState.ollamaStatus.running,
       models: apiState.clone(apiState.ollamaModels),
     }),
+    getOllamaModelState: async () => apiState.clone(apiState.moondreamState),
   },
 }));
 
@@ -137,6 +158,15 @@ beforeEach(() => {
     sizeBytes: index === 0 ? 14_111_222_333 : null,
   }));
   apiState.pulledTags = [];
+  apiState.moondreamState = { running: true, downloaded: false, sizeBytes: null };
+  apiState.settings.imageCaptioning = {
+    enabled: false,
+    providerId: 'ollama',
+    modelId: 'moondream:latest',
+    prompt: 'Describe this image in rich detail.',
+  };
+  (apiState.settings.globalDefaults as { providerId: string }).providerId = 'ollama';
+  apiState.providerCatalog = catalogModels.map((model) => ({ ...model }));
 });
 
 afterEach(() => {
@@ -229,6 +259,102 @@ describe('EngineCard — Ollama model library', () => {
     expect(wrapper.find(`button[aria-label="Download ${CYDONIA_LABEL}"]`).exists()).toBe(false);
     const cydoniaRow = wrapper.findAll('div').find((node) => node.text().includes(CYDONIA_LABEL));
     expect(cydoniaRow?.text()).toContain('Downloaded');
+  });
+
+  it('never renders Download controls for non-Ollama providers (bug regression)', async () => {
+    // Point the engine at OpenRouter with a cached cloud catalog.
+    (apiState.settings.globalDefaults as { providerId: string }).providerId = 'openrouter';
+    apiState.providerCatalog = [
+      {
+        id: 'inference.net/schematron-v2-turbo',
+        name: 'Inference.net: Schematron V2 Turbo',
+        contextLength: 128_000,
+        inputModalities: ['text'],
+      },
+      {
+        id: '~openai/gpt-astra-latest',
+        name: 'OpenAI GPT Astra Latest',
+        contextLength: 1_000_000,
+        inputModalities: ['text', 'image'],
+      },
+    ];
+
+    const store = useSettingsStore();
+    await store.load();
+    const Host = host('<div><EngineCard /></div>', { EngineCard });
+    const wrapper = mount(Host, { global: { plugins: [vaporInteropPlugin] } });
+    await flushPromises();
+
+    await wrapper.find('button[aria-label="Open model library"]').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('Schematron V2 Turbo');
+    expect(wrapper.find('button[aria-label^="Download "]').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('Downloaded');
+  });
+});
+
+describe('ImageCaptioningCard', () => {
+  it('renders the toggle, model info, and a Download button when not pulled', async () => {
+    const store = useSettingsStore();
+    await store.load();
+    const Host = host('<div><ImageCaptioningCard /></div>', { ImageCaptioningCard });
+    const wrapper = mount(Host, { global: { plugins: [vaporInteropPlugin] } });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('Local Image Captioning');
+    expect(wrapper.text()).toContain('Uses a local lightweight vision model');
+    expect(wrapper.text()).toContain('Moondream2 (Ollama library)');
+    expect(wrapper.text()).toContain('moondream:latest');
+    expect(wrapper.text()).toContain('Not downloaded');
+    expect(wrapper.find('button[role="switch"]').attributes('aria-checked')).toBe('false');
+    expect(wrapper.find('button[aria-label="Download Moondream2 vision model"]').exists()).toBe(
+      true,
+    );
+  });
+
+  it('toggling the helper persists through PATCH', async () => {
+    const store = useSettingsStore();
+    await store.load();
+    const Host = host('<div><ImageCaptioningCard /></div>', { ImageCaptioningCard });
+    const wrapper = mount(Host, { global: { plugins: [vaporInteropPlugin] } });
+    await flushPromises();
+
+    await wrapper.find('button[role="switch"]').trigger('click');
+    await flushPromises();
+
+    expect((apiState.settings.imageCaptioning as { enabled: boolean } | undefined)?.enabled).toBe(
+      true,
+    );
+    expect(wrapper.find('button[role="switch"]').attributes('aria-checked')).toBe('true');
+  });
+
+  it('shows the Downloaded chip once the vision model is pulled', async () => {
+    apiState.moondreamState = { running: true, downloaded: true, sizeBytes: 1_600_000_000 };
+    const store = useSettingsStore();
+    await store.load();
+    const Host = host('<div><ImageCaptioningCard /></div>', { ImageCaptioningCard });
+    const wrapper = mount(Host, { global: { plugins: [vaporInteropPlugin] } });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('Downloaded');
+    expect(wrapper.find('button[aria-label="Download Moondream2 vision model"]').exists()).toBe(
+      false,
+    );
+  });
+
+  it('streams pull progress through the shared Ollama pipeline', async () => {
+    const store = useSettingsStore();
+    await store.load();
+    const Host = host('<div><ImageCaptioningCard /></div>', { ImageCaptioningCard });
+    const wrapper = mount(Host, { global: { plugins: [vaporInteropPlugin] } });
+    await flushPromises();
+
+    await wrapper.find('button[aria-label="Download Moondream2 vision model"]').trigger('click');
+    await flushPromises();
+
+    expect(apiState.pulledTags).toEqual(['moondream:latest']);
+    expect(wrapper.text()).toContain('Downloaded');
   });
 });
 

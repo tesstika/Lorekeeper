@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { LorekeeperDb } from '../db/client';
+import { captionAttachmentsForChat } from '../generation/promptInputs';
 import {
   isGenerating,
   resolveGenerationConfig,
@@ -15,6 +16,7 @@ import {
 import type { ChatRow } from '../services/chatsRepo';
 import { getChatRow } from '../services/chatsRepo';
 import { KeyStore } from '../services/keyStore';
+import { getMessageRow } from '../services/messagesRepo';
 import type { AppInstance } from '../types/app';
 import { httpError } from '../util/http';
 
@@ -68,6 +70,8 @@ export async function registerGenerationRoutes(app: AppInstance): Promise<void> 
       throw httpError(404, 'not_found', `Chat ${chatId} does not exist`);
     }
     await preflightOllama(app.db, chat);
+    // Vision-helper pre-pass (async safe zone — see preflightOllama/D-T3).
+    const captionWarnings = await captionAttachmentsForChat(app.db, app.dataDir, chat);
     if (isGenerating(chatId)) {
       throw httpError(
         409,
@@ -83,6 +87,7 @@ export async function registerGenerationRoutes(app: AppInstance): Promise<void> 
       writer,
       chatId,
       targetMessageId: null,
+      captionWarnings,
     });
   });
 
@@ -97,6 +102,10 @@ export async function registerGenerationRoutes(app: AppInstance): Promise<void> 
         throw httpError(404, 'not_found', `Chat ${chatId} does not exist`);
       }
       await preflightOllama(app.db, chat);
+      const target = getMessageRow(app.db, chatId, targetMessageId);
+      const captionWarnings = await captionAttachmentsForChat(app.db, app.dataDir, chat, {
+        ...(target ? { cutoffSeq: target.seq } : {}),
+      });
       if (isGenerating(chatId)) {
         throw httpError(
           409,
@@ -112,6 +121,7 @@ export async function registerGenerationRoutes(app: AppInstance): Promise<void> 
         writer,
         chatId,
         targetMessageId,
+        captionWarnings,
       });
     },
   );

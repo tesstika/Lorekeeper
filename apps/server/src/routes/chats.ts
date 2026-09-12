@@ -20,7 +20,7 @@ import {
 } from '@lorekeeper/shared';
 import { z } from 'zod';
 import { isGenerating } from '../generation/config';
-import { loadPromptInputs } from '../generation/promptInputs';
+import { captionAttachmentsForChat, loadPromptInputs } from '../generation/promptInputs';
 import { SessionConfigError } from '../generation/session';
 import {
   ChatRepoError,
@@ -276,9 +276,12 @@ export async function registerChatRoutes(app: AppInstance): Promise<void> {
       }
       // Config failures surface as clean JSON errors: no model/provider set →
       // 400 `no_model_configured`; vanished chat character → 404.
+      // Vision-helper pre-pass: captions appear in the preview exactly as a
+      // generation would assemble them (no-op unless captioning is enabled).
+      const captionWarnings = await captionAttachmentsForChat(app.db, app.dataDir, chat);
       let preview: ReturnType<typeof loadPromptInputs>;
       try {
-        preview = loadPromptInputs(app.db, app.dataDir, chat);
+        preview = loadPromptInputs(app.db, app.dataDir, chat, { captionWarnings });
       } catch (error) {
         if (error instanceof SessionConfigError) {
           if (error.code === 'not_found') {

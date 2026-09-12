@@ -120,6 +120,36 @@ export const composerSchema = z.object({
 export type ComposerSettings = z.output<typeof composerSchema>;
 export type ComposerPatch = z.input<typeof composerSchema>;
 
+/**
+ * Local image captioning (vision helper): a lightweight Ollama vision model
+ * describes attached images for text-only RP models. `providerId` is pinned
+ * to Ollama — the helper always runs locally.
+ *
+ * Default model: the official Ollama library `moondream` (Moondream2). The
+ * spec's original `hf.co/corono1/moondream2-2b-q4_k_m-gguf` GGUF loads as a
+ * TEXT-ONLY model in Ollama (no vision projector — verified live 2026-09-12:
+ * every image request 400s with "model does not support multimodal
+ * requests"), so it is retired: stored rows still carrying it are healed to
+ * the new default on read.
+ */
+export const OLLAMA_CAPTIONER_MODEL = 'moondream:latest';
+export const OLLAMA_CAPTIONER_MODEL_RETIRED = 'hf.co/corono1/moondream2-2b-q4_k_m-gguf';
+
+export const imageCaptioningSchema = z.object({
+  enabled: z.boolean().default(false),
+  providerId: z.literal('ollama').default('ollama'),
+  modelId: z.string().min(1).max(200).default(OLLAMA_CAPTIONER_MODEL),
+  prompt: z
+    .string()
+    .min(1)
+    .max(4_000)
+    .default(
+      'Describe this image in rich detail for a roleplay session, focusing on characters, clothing, expressions, environment, and notable objects.',
+    ),
+});
+export type ImageCaptioningSettings = z.output<typeof imageCaptioningSchema>;
+export type ImageCaptioningPatchInput = z.input<typeof imageCaptioningSchema>;
+
 // ---------------------------------------------------------------------------
 // PATCH schemas — deliberately built WITHOUT `.default()`: the type provider
 // validates request bodies through the z.output direction, which injects every
@@ -159,6 +189,15 @@ export const composerPatchSchema = z.object({
 });
 export type ComposerPatchValue = z.output<typeof composerPatchSchema>;
 
+/** Defaults-free PATCH for the image-captioning section (M1 §4.2 discipline). */
+export const imageCaptioningPatchSchema = z.object({
+  enabled: z.boolean().optional(),
+  providerId: z.literal('ollama').optional(),
+  modelId: z.string().min(1).max(200).optional(),
+  prompt: z.string().min(1).max(4_000).optional(),
+});
+export type ImageCaptioningPatchValue = z.output<typeof imageCaptioningPatchSchema>;
+
 /**
  * Response of GET/PATCH /api/settings. `apiKeys` is deliberately NOT part of
  * this response — key envelopes are exposed only through the provider
@@ -168,6 +207,7 @@ export const settingsResponseSchema = z.object({
   globalDefaults: globalDefaultsSchema,
   promptTemplate: promptTemplateSchema,
   composer: composerSchema,
+  imageCaptioning: imageCaptioningSchema,
 });
 export type SettingsResponse = z.output<typeof settingsResponseSchema>;
 
@@ -175,6 +215,7 @@ export const settingsPatchSchema = z.object({
   globalDefaults: globalDefaultsPatchSchema.optional(),
   promptTemplate: promptTemplatePatchSchema.optional(),
   composer: composerPatchSchema.optional(),
+  imageCaptioning: imageCaptioningPatchSchema.optional(),
 });
 export type SettingsPatch = z.output<typeof settingsPatchSchema>;
 
@@ -246,6 +287,18 @@ export const ollamaModelsResponseSchema = z.object({
   models: z.array(ollamaCuratedModelSchema),
 });
 export type OllamaModelsResponse = z.output<typeof ollamaModelsResponseSchema>;
+
+/**
+ * `GET /api/providers/ollama/model-state?tag=…` — pull state of a single
+ * installed-or-not tag (used by the image-captioning card for Moondream2).
+ */
+export const ollamaModelStateQuerySchema = z.object({ tag: z.string().min(1).max(300) });
+export const ollamaModelStateResponseSchema = z.object({
+  running: z.boolean(),
+  downloaded: z.boolean(),
+  sizeBytes: z.number().nullable(),
+});
+export type OllamaModelStateResponse = z.output<typeof ollamaModelStateResponseSchema>;
 
 /** `POST /api/providers/ollama/pull` body — tag must be on the curated whitelist. */
 export const ollamaPullBodySchema = z.object({

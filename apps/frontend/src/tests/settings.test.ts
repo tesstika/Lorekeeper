@@ -36,6 +36,12 @@ const settingsFixture: SettingsResponse = {
     deliveredBlinkMs: 250,
     deliveredBlinks: 6,
   },
+  imageCaptioning: {
+    enabled: false,
+    providerId: 'ollama',
+    modelId: 'moondream:latest',
+    prompt: 'Describe this image in rich detail.',
+  },
 };
 
 const providersFixture: ProviderInfo[] = [
@@ -101,6 +107,12 @@ const apiState = vi.hoisted(() => {
       caretBlinkMs: 500,
       deliveredBlinkMs: 250,
       deliveredBlinks: 6,
+    },
+    imageCaptioning: {
+      enabled: false,
+      providerId: 'ollama',
+      modelId: 'moondream:latest',
+      prompt: 'Describe this image in rich detail.',
     },
   };
   const providers: ProviderInfo[] = [
@@ -183,6 +195,8 @@ vi.mock('@/api', () => ({
       return { status: 'connected' as const, latencyMs: 42, code: null, message: null };
     },
     getProviderModels: async () => ({ models: [], fetchedAt: NOW_ISO_PLACEHOLDER, cached: false }),
+    getOllamaStatus: async () => ({ running: true, version: '0.34.0' }),
+    getOllamaModelState: async () => ({ running: true, downloaded: false, sizeBytes: null }),
     createPreset: async (input: Record<string, unknown>) => {
       const preset = {
         name: '',

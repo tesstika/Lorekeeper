@@ -5,9 +5,13 @@ import {
   composerSchema,
   type GlobalDefaults,
   globalDefaultsSchema,
+  type ImageCaptioningSettings,
+  imageCaptioningSchema,
   type KeyEnvelope,
   type ModelCache,
   modelCacheSchema,
+  OLLAMA_CAPTIONER_MODEL,
+  OLLAMA_CAPTIONER_MODEL_RETIRED,
   type PromptTemplate,
   type ProviderId,
   promptTemplateSchema,
@@ -106,6 +110,23 @@ export function getComposer(db: LorekeeperDb): ComposerSettings {
     (raw) => composerSchema.parse(raw),
     () => composerSchema.parse({}),
   );
+}
+
+/**
+ * Reads the captioning section, healing installs whose stored row still
+ * carries the retired (vision-less) hf.co Moondream GGUF default.
+ */
+export function getImageCaptioning(db: LorekeeperDb): ImageCaptioningSettings {
+  const settings = getSettingWith(
+    db,
+    'imageCaptioning',
+    (raw) => imageCaptioningSchema.parse(raw),
+    () => imageCaptioningSchema.parse({}),
+  );
+  if (settings.modelId === OLLAMA_CAPTIONER_MODEL_RETIRED) {
+    return { ...settings, modelId: OLLAMA_CAPTIONER_MODEL };
+  }
+  return settings;
 }
 
 // -- model cache (`modelCache:<providerId>`) ---------------------------------

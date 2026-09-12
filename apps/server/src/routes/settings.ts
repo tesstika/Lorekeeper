@@ -6,6 +6,7 @@ import {
 import {
   getComposer,
   getGlobalDefaults,
+  getImageCaptioning,
   getPromptTemplate,
   setSettingRaw,
 } from '../services/settingsRepo';
@@ -16,6 +17,7 @@ export function readSettings(db: AppInstance['db']): SettingsResponse {
     globalDefaults: getGlobalDefaults(db),
     promptTemplate: getPromptTemplate(db),
     composer: getComposer(db),
+    imageCaptioning: getImageCaptioning(db),
   };
 }
 
@@ -45,6 +47,10 @@ export async function registerSettingsRoutes(app: AppInstance): Promise<void> {
       if (patch.composer) {
         const next = { ...getComposer(app.db), ...patch.composer };
         setSettingRaw(app.db, 'composer', next);
+      }
+      if (patch.imageCaptioning) {
+        const next = { ...getImageCaptioning(app.db), ...patch.imageCaptioning };
+        setSettingRaw(app.db, 'imageCaptioning', next);
       }
       return readSettings(app.db);
     },

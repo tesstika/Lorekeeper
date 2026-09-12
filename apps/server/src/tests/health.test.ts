@@ -58,6 +58,12 @@ describe('GET /api/health', () => {
       .all()
       .map((row) => row.name);
     expect(chatColumns).toContain('persona_none');
+    // Vision helper: attachments.caption caches Moondream2 descriptions.
+    const attachmentColumns = app.sqlite
+      .query<{ name: string }, []>('PRAGMA table_info(attachments)')
+      .all()
+      .map((row) => row.name);
+    expect(attachmentColumns).toContain('caption');
   });
 
   it('returns a 404 envelope for unknown api routes', async () => {

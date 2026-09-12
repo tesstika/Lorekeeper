@@ -48,6 +48,8 @@ export interface SessionOptions {
   idleTimeoutMs?: number;
   idleCheckMs?: number;
   keepLastNVariants?: number;
+  /** Captioner failure warnings collected by the route's pre-pass. */
+  captionWarnings?: string[];
 }
 
 export interface SessionOutcome {
@@ -183,6 +185,7 @@ export async function runGenerationSession(options: SessionOptions): Promise<Ses
   try {
     ({ assembled } = loadPromptInputs(db, options.dataDir, chat, {
       ...(target ? { cutoffSeq: target.seq } : {}),
+      ...(options.captionWarnings ? { captionWarnings: options.captionWarnings } : {}),
     }));
   } catch (error) {
     if (error instanceof SessionConfigError) {

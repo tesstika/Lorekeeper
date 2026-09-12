@@ -394,6 +394,62 @@ describe('health route', () => {
   });
 });
 
+describe('image captioning settings section', () => {
+  it('GET returns schema defaults with the Moondream2 model', async () => {
+    const response = await app.inject({ method: 'GET', url: '/api/settings' });
+    expect(response.statusCode).toBe(200);
+    expect(response.json().imageCaptioning).toEqual({
+      enabled: false,
+      providerId: 'ollama',
+      modelId: 'moondream:latest',
+      prompt: expect.stringContaining('rich detail'),
+    });
+  });
+
+  it('PATCH merges partial imageCaptioning values and keeps untouched keys', async () => {
+    const patched = await app.inject({
+      method: 'PATCH',
+      url: '/api/settings',
+      payload: { imageCaptioning: { enabled: true } },
+    });
+    expect(patched.statusCode).toBe(200);
+    expect(patched.json().imageCaptioning).toMatchObject({
+      enabled: true,
+      providerId: 'ollama',
+      modelId: 'moondream:latest',
+    });
+
+    // Untouched-keys regression: a prompt-only PATCH keeps enabled + model.
+    const promptOnly = await app.inject({
+      method: 'PATCH',
+      url: '/api/settings',
+      payload: { imageCaptioning: { prompt: 'Custom caption prompt.' } },
+    });
+    expect(promptOnly.json().imageCaptioning).toEqual({
+      enabled: true,
+      providerId: 'ollama',
+      modelId: 'moondream:latest',
+      prompt: 'Custom caption prompt.',
+    });
+
+    // Persisted under the imageCaptioning kv row.
+    const rows = app.sqlite
+      .query<{ value: string }, []>("SELECT value FROM settings WHERE key = 'imageCaptioning'")
+      .all();
+    expect(JSON.parse(rows[0]?.value ?? '{}')).toMatchObject({ enabled: true });
+  });
+
+  it('rejects invalid imageCaptioning patches with a 400', async () => {
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/api/settings',
+      payload: { imageCaptioning: { enabled: 'yes' } },
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({ code: 'validation_error' });
+  });
+});
+
 describe('data hygiene', () => {
   it('keeps the master key outside the data dir', () => {
     expect(existsSync(secretKeyPath)).toBe(true);

@@ -114,6 +114,8 @@ export const attachments = sqliteTable('attachments', {
   width: integer(),
   height: integer(),
   sizeBytes: integer().notNull(),
+  /** Vision-helper description (Moondream2 via Ollama); null until captioned. */
+  caption: text(),
   createdAt: text().notNull(),
 });
 
