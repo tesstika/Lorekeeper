@@ -78,6 +78,8 @@ export type KeyEnvelope = z.output<typeof keyEnvelopeSchema>;
 export const apiKeysSchema = z.object({
   openrouter: keyEnvelopeSchema.nullable().default(null),
   unorouter: keyEnvelopeSchema.nullable().default(null),
+  // Ollama is keyless (local daemon) — the slot exists so KeyStore stays total.
+  ollama: keyEnvelopeSchema.nullable().default(null),
 });
 export type ApiKeys = z.output<typeof apiKeysSchema>;
 
@@ -212,6 +214,57 @@ export const testConnectionResponseSchema = z.object({
   message: z.string().nullable().default(null),
 });
 export type TestConnectionResponse = z.output<typeof testConnectionResponseSchema>;
+
+// ---------------------------------------------------------------------------
+// Ollama (local provider) — status, curated catalog & pull management
+// ---------------------------------------------------------------------------
+
+/** `GET /api/providers/ollama/status` — daemon reachability probe. */
+export const ollamaStatusResponseSchema = z.object({
+  running: z.boolean(),
+  version: z.string().nullable(),
+});
+export type OllamaStatusResponse = z.output<typeof ollamaStatusResponseSchema>;
+
+/**
+One entry of the curated Ollama whitelist — the only models the app offers,
+cross-referenced against `GET /api/tags` for their download state.
+*/
+export const ollamaCuratedModelSchema = z.object({
+  tag: z.string(),
+  label: z.string(),
+  huggingFaceUrl: z.string(),
+  downloaded: z.boolean(),
+  /** Size on disk once pulled (from /api/tags); null while not downloaded. */
+  sizeBytes: z.number().nullable(),
+});
+export type OllamaCuratedModel = z.output<typeof ollamaCuratedModelSchema>;
+
+/** `GET /api/providers/ollama/models` — curated list + download states. */
+export const ollamaModelsResponseSchema = z.object({
+  running: z.boolean(),
+  models: z.array(ollamaCuratedModelSchema),
+});
+export type OllamaModelsResponse = z.output<typeof ollamaModelsResponseSchema>;
+
+/** `POST /api/providers/ollama/pull` body — tag must be on the curated whitelist. */
+export const ollamaPullBodySchema = z.object({
+  modelTag: z.string().min(1).max(200),
+});
+
+/**
+SSE data frame of the pull stream: forwards Ollama's NDJSON progress
+({ status, completed, total }) verbatim plus the modelTag. A frame with
+`status: 'success'` terminates a healthy pull; `error` terminates a failed one.
+*/
+export const ollamaPullProgressEventSchema = z.object({
+  modelTag: z.string(),
+  status: z.string(),
+  completed: z.number().optional(),
+  total: z.number().optional(),
+  error: z.string().optional(),
+});
+export type OllamaPullProgressEvent = z.output<typeof ollamaPullProgressEventSchema>;
 
 // ---------------------------------------------------------------------------
 // Models & model cache

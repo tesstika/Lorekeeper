@@ -1,5 +1,6 @@
 import type { ProviderId } from '@lorekeeper/shared';
 import { mockProvider } from './mock';
+import { ollamaProvider } from './ollama';
 import { openRouterProvider } from './openrouter';
 import type { LlmProvider } from './types';
 import { unoRouterProvider } from './unorouter';
@@ -7,6 +8,7 @@ import { unoRouterProvider } from './unorouter';
 export const providerRegistry: Record<ProviderId, LlmProvider> = {
   openrouter: openRouterProvider,
   unorouter: unoRouterProvider,
+  ollama: ollamaProvider,
 };
 
 const USE_MOCK = process.env.LOREKEEPER_MOCK_PROVIDER === '1';
@@ -22,5 +24,11 @@ export function setProviderForTesting(id: ProviderId, provider: LlmProvider): vo
   providerRegistry[id] = provider;
 }
 
+export {
+  OLLAMA_BASE_URL,
+  OLLAMA_CURATED_MODELS,
+  OLLAMA_OFFLINE_MESSAGE,
+  ollamaProvider,
+} from './ollama';
 export { type LlmProvider, ProviderError } from './types';
 export { openRouterProvider, unoRouterProvider };

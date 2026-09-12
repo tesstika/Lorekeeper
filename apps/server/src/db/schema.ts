@@ -3,6 +3,7 @@ import type {
   ChatStatus,
   FinishReason,
   MessageRole,
+  ProviderId,
   TokenUsage,
 } from '@lorekeeper/shared';
 import { index, integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
@@ -69,7 +70,7 @@ export const chats = sqliteTable('chats', {
   title: text().notNull(),
   ribbon: text(),
   status: text().$type<ChatStatus>().notNull().default('in_progress'),
-  providerId: text().$type<'openrouter' | 'unorouter'>(),
+  providerId: text().$type<ProviderId>(),
   modelId: text(),
   presetId: text().references(() => presets.id, { onDelete: 'set null' }),
   // Per-chat context budget override (M4, plan §6.2); null → global defaults.
@@ -93,7 +94,7 @@ export const messages = sqliteTable(
     variantIndex: integer(),
     isActive: integer({ mode: 'boolean' }).notNull().default(true),
     isGreeting: integer({ mode: 'boolean' }).notNull().default(false),
-    providerId: text().$type<'openrouter' | 'unorouter'>(),
+    providerId: text().$type<ProviderId>(),
     modelId: text(),
     finishReason: text().$type<FinishReason>(),
     isError: integer({ mode: 'boolean' }).notNull().default(false),

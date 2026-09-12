@@ -46,6 +46,11 @@ export function toWireBody(request: ChatRequest, stream: boolean): Record<string
   if (request.topK != null) body.top_k = request.topK;
   if (request.repetitionPenalty != null) body.repetition_penalty = request.repetitionPenalty;
   if (stream && request.includeUsage) body.usage = { include: true };
+  // Ollama-only (feature spec §3.A): its daemon defaults to a 2048-token
+  // context window and truncates roleplay prompts — num_ctx lifts the cap.
+  if (typeof request.numCtx === 'number' && request.numCtx > 0) {
+    body.options = { num_ctx: request.numCtx };
+  }
   return body;
 }
 

@@ -1,4 +1,4 @@
-import type { AttachmentInfo, CreateChatInput } from '@lorekeeper/shared';
+import type { AttachmentInfo, CreateChatInput, ProviderId } from '@lorekeeper/shared';
 import { and, desc, eq, or, sql } from 'drizzle-orm';
 import type { LorekeeperDb } from '../db/client';
 import { characters, chats, messages, personas } from '../db/schema';
@@ -59,7 +59,7 @@ export interface ChatSummaryRecord {
   personaNone: boolean;
   ribbon: string | null;
   status: 'in_progress' | 'archived';
-  providerId: 'openrouter' | 'unorouter' | null;
+  providerId: ProviderId | null;
   modelId: string | null;
   presetId: string | null;
   contextBudgetTokens: number | null;

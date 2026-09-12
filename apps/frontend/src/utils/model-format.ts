@@ -23,12 +23,12 @@ export function formatPricePerMillion(price: number | undefined): string | null 
 }
 
 export function isVisionModel(model: ModelInfo): boolean {
-  return model.inputModalities.includes('image');
+  return model.inputModalities?.includes('image') ?? false;
 }
 
 /** Empty modalities = provider published no metadata (A1) → allow with warning. */
 export function modalityUnknown(model: ModelInfo): boolean {
-  return model.inputModalities.length === 0;
+  return (model.inputModalities?.length ?? 0) === 0;
 }
 
 export function formatModelPricing(model: ModelInfo): string | null {
@@ -39,4 +39,13 @@ export function formatModelPricing(model: ModelInfo): string | null {
   const completionText = completion ?? '?';
   if (promptText === 'free' && completionText === 'free') return 'free';
   return `${promptText} in · ${completionText} out`;
+}
+
+/** 14_111_222_333 → "14.1 GB", 24_500_000 → "24.5 MB" — model download sizes. */
+export function formatBytes(bytes: number | null): string | null {
+  if (bytes === null || !Number.isFinite(bytes) || bytes <= 0) return null;
+  if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
+  if (bytes >= 1024 ** 2) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+  if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${bytes} B`;
 }

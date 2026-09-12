@@ -5,7 +5,18 @@ import { ApiError } from '@/api';
 import { streamGeneration } from '@/api/sse';
 import { describeApiError } from '@/utils/errors';
 import { useChatsStore } from './chats';
+import { useSettingsStore } from './settings';
 import { useUiStore } from './ui';
+
+/**
+ * Ollama pre-flight rejection (feature spec §2): the effective model is not
+ * pulled yet — the chat page offers a confirmation download + retry.
+ */
+export interface PendingModelDownload {
+  chatId: string;
+  targetMessageId: string | null;
+  modelTag: string;
+}
 
 /**
  * Single source of truth for the Stop button and the 409 single-flight guard
@@ -15,11 +26,14 @@ import { useUiStore } from './ui';
 export const useStreamingStore = defineStore('streaming', () => {
   const ui = useUiStore();
   const chats = useChatsStore();
+  const settings = useSettingsStore();
 
   const chatId = ref<string | null>(null);
   const streamingVariantId = ref<string | null>(null);
   const streamingGroupId = ref<string | null>(null);
   const isStreaming = ref(false);
+  /** Set when generation was refused because the Ollama model is not pulled. */
+  const pendingDownload = ref<PendingModelDownload | null>(null);
   /**
    * Terminal outcome of the last stream, taken from the SSE events themselves
    * (D9 Stage B dot tone). Derived after the fact from the local cache would
@@ -27,6 +41,10 @@ export const useStreamingStore = defineStore('streaming', () => {
    */
   const lastOutcome = ref<'stop' | 'aborted' | 'error'>('stop');
   let controller: AbortController | null = null;
+
+  function clearPendingDownload(): void {
+    pendingDownload.value = null;
+  }
 
   async function start(options: {
     chatId: string;
@@ -79,6 +97,10 @@ export const useStreamingStore = defineStore('streaming', () => {
       if (controller.signal.aborted) {
         // Stop button: the server already persisted the partial text.
         lastOutcome.value = 'aborted';
+      } else if (error instanceof ApiError && error.code === 'model_not_downloaded') {
+        // Must precede the generic 409 branch — the pre-flight uses 409 too.
+        const modelTag = chats.activeChat?.chat.modelId ?? settings.globalDefaults.modelId ?? '';
+        pendingDownload.value = { chatId: id, targetMessageId, modelTag };
       } else if (error instanceof ApiError && error.statusCode === 409) {
         ui.notify('A reply is already being written for this chat.', 'info');
       } else {
@@ -110,8 +132,10 @@ export const useStreamingStore = defineStore('streaming', () => {
     streamingVariantId,
     streamingGroupId,
     isStreaming,
+    pendingDownload,
     lastOutcome,
     start,
     stop,
+    clearPendingDownload,
   };
 });

@@ -20,6 +20,7 @@ import { getChatRow } from '../services/chatsRepo';
 import {
   activeGenerations,
   type ResolvedGenerationConfig,
+  resolveContextBudgetTokens,
   resolveGenerationConfig,
   SessionConfigError,
 } from './config';
@@ -164,7 +165,8 @@ export async function runGenerationSession(options: SessionOptions): Promise<Ses
   }
 
   // Key check stays outside loadPromptInputs so `no_key` persists a bubble.
-  if (!options.keyStore.hasKey(config.providerId)) {
+  // Ollama is keyless — its daemon/pull preflight lives in routes/generation.ts.
+  if (config.providerId !== 'ollama' && !options.keyStore.hasKey(config.providerId)) {
     return failFast(
       {
         code: 'no_key',
@@ -193,6 +195,11 @@ export async function runGenerationSession(options: SessionOptions): Promise<Ses
   }
   assembled.request.model = config.modelId;
   if (config.providerId === 'openrouter') assembled.request.includeUsage = true;
+  if (config.providerId === 'ollama') {
+    // Ollama defaults num_ctx to 2048 and would truncate roleplay prompts —
+    // lift it to the effective context budget (feature spec §3.A).
+    assembled.request.numCtx = resolveContextBudgetTokens(db, chat);
+  }
 
   // Pending assistant row: created active; regenerate joins the target group.
   let variantRow: MessageRow;
@@ -246,7 +253,9 @@ export async function runGenerationSession(options: SessionOptions): Promise<Ses
   let outcome: SessionOutcome;
   try {
     const provider = getProvider(config.providerId);
-    const apiKey = options.keyStore.decrypt(config.providerId);
+    // Ollama is keyless — the provider ignores the credential slot.
+    const apiKey =
+      config.providerId === 'ollama' ? '' : options.keyStore.decrypt(config.providerId);
     let doneUsage: TokenUsage | undefined;
     let doneReason: string | null = null;
     let streamError: { event: unknown; error: ChatError } | null = null;

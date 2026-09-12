@@ -1,4 +1,5 @@
-import { parseSseFrames, type SseEvent } from '@lorekeeper/shared';
+import type { OllamaPullProgressEvent, SseEvent } from '@lorekeeper/shared';
+import { parseSseFrames } from '@lorekeeper/shared';
 import { ApiError } from './index';
 
 export interface StreamHandlers {
@@ -39,6 +40,40 @@ export async function streamGeneration(
     if (!frame.data) continue; // comment heartbeat
     try {
       handlers.onEvent(JSON.parse(frame.data) as SseEvent);
+    } catch {
+      // Malformed frame — skip rather than break the stream.
+    }
+  }
+}
+
+export interface OllamaPullHandlers {
+  onProgress: (event: OllamaPullProgressEvent) => void;
+}
+
+/**
+ * POSTs a curated-model pull and consumes the progress SSE stream (feature
+ * spec §2): frames carry `{ modelTag, status, completed?, total?, error? }`.
+ * Resolves when the stream ends (success or error frame); the abort signal
+ * cancels the upstream pull.
+ */
+export async function streamOllamaPull(
+  modelTag: string,
+  handlers: OllamaPullHandlers,
+  signal: AbortSignal,
+): Promise<void> {
+  const response = await fetch('/api/providers/ollama/pull', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ modelTag }),
+    signal,
+  });
+  if (!response.ok) await raiseApiError(response);
+  if (!response.body) throw new ApiError('Empty stream body', 502, 'empty_stream');
+
+  for await (const frame of parseSseFrames(response.body)) {
+    if (!frame.data) continue;
+    try {
+      handlers.onProgress(JSON.parse(frame.data) as OllamaPullProgressEvent);
     } catch {
       // Malformed frame — skip rather than break the stream.
     }

@@ -1,4 +1,4 @@
-export const providerIds = ['openrouter', 'unorouter'] as const;
+export const providerIds = ['openrouter', 'unorouter', 'ollama'] as const;
 export type ProviderId = (typeof providerIds)[number];
 
 export const chatStatuses = ['in_progress', 'archived'] as const;

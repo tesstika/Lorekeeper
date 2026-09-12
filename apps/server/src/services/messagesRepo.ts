@@ -1,4 +1,4 @@
-import type { ChatError } from '@lorekeeper/shared';
+import type { ChatError, ProviderId } from '@lorekeeper/shared';
 import { and, asc, eq, gt, inArray, sql } from 'drizzle-orm';
 import type { LorekeeperDb } from '../db/client';
 import { attachments, chats, messages } from '../db/schema';
@@ -152,7 +152,7 @@ export function appendUserMessage(
 export interface CreateVariantOptions {
   /** Regenerate targets an existing group; generate opens a fresh one. */
   groupId?: string | undefined;
-  providerId?: 'openrouter' | 'unorouter' | null | undefined;
+  providerId?: ProviderId | null | undefined;
   modelId?: string | null | undefined;
   /** Variant cap (globalDefaults.keepLastNVariants, default 20). */
   keepLastNVariants?: number | undefined;
@@ -215,7 +215,7 @@ interface InsertVariantArgs {
   seq: number;
   groupId: string;
   variantIndex: number;
-  providerId: 'openrouter' | 'unorouter' | null;
+  providerId: ProviderId | null;
   modelId: string | null;
 }
 

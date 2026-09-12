@@ -1,9 +1,11 @@
 <script setup lang="ts" vapor>
 import type { ProviderId, ProviderInfo } from '@lorekeeper/shared';
-import { computed, reactive } from 'vue';
+import { computed, onMounted, reactive } from 'vue';
+import { useOllamaStore } from '@/stores/ollama';
 import { useSettingsStore } from '@/stores/settings';
 import { useUiStore } from '@/stores/ui';
 import { describeApiError } from '@/utils/errors';
+import IconAlert from '~icons/lucide/circle-alert';
 import IconClipboard from '~icons/lucide/clipboard-paste';
 import IconEye from '~icons/lucide/eye';
 import IconEyeOff from '~icons/lucide/eye-off';
@@ -14,23 +16,54 @@ import SectionHeader from './SectionHeader.vue';
 
 const store = useSettingsStore();
 const ui = useUiStore();
+const ollama = useOllamaStore();
 
 const props = defineProps<{ providers: ProviderInfo[] }>();
 
-const draftKeys = reactive<Record<ProviderId, string>>({ openrouter: '', unorouter: '' });
-const revealed = reactive<Record<ProviderId, boolean>>({ openrouter: false, unorouter: false });
-const busy = reactive<Record<ProviderId, boolean>>({ openrouter: false, unorouter: false });
-const testing = reactive<Record<ProviderId, boolean>>({ openrouter: false, unorouter: false });
+const draftKeys = reactive<Record<ProviderId, string>>({
+  openrouter: '',
+  unorouter: '',
+  ollama: '',
+});
+const revealed = reactive<Record<ProviderId, boolean>>({
+  openrouter: false,
+  unorouter: false,
+  ollama: false,
+});
+const busy = reactive<Record<ProviderId, boolean>>({
+  openrouter: false,
+  unorouter: false,
+  ollama: false,
+});
+const testing = reactive<Record<ProviderId, boolean>>({
+  openrouter: false,
+  unorouter: false,
+  ollama: false,
+});
 const confirmingClear = reactive<Record<ProviderId, boolean>>({
   openrouter: false,
   unorouter: false,
+  ollama: false,
+});
+
+onMounted(() => {
+  // Best-effort probe; the banner's Check Connection button offers an explicit retry.
+  void ollama.checkStatus().catch(() => {});
 });
 
 const activeCount = computed(() => props.providers.filter((p) => p.hasKey).length);
 
-const badges: Record<ProviderId, string> = { openrouter: 'Primary', unorouter: 'Failover' };
+const badges: Record<ProviderId, string> = {
+  openrouter: 'Primary',
+  unorouter: 'Failover',
+  ollama: 'Local',
+};
 
 function statusText(provider: ProviderInfo): string {
+  if (provider.id === 'ollama') {
+    if (ollama.status === null) return 'Checking…';
+    return ollama.status.running ? `Running (v${ollama.status.version ?? '?'})` : 'Not running';
+  }
   if (!provider.hasKey) return 'Not configured';
   if (provider.status === 'error') return 'Error — check connection';
   if (provider.latencyMs === null) return 'Key saved — not verified';
@@ -38,15 +71,33 @@ function statusText(provider: ProviderInfo): string {
 }
 
 function statusColor(provider: ProviderInfo): string {
+  if (provider.id === 'ollama') {
+    if (ollama.status === null) return 'text-secondary';
+    return ollama.status.running ? 'text-emerald-300' : 'text-error';
+  }
   if (!provider.hasKey) return 'text-secondary';
   if (provider.status === 'error') return 'text-error';
   return 'text-emerald-300';
 }
 
 function dotColor(provider: ProviderInfo): string {
+  if (provider.id === 'ollama') {
+    if (ollama.status === null) return 'bg-surface-container-highest';
+    return ollama.status.running
+      ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]'
+      : 'bg-error';
+  }
   if (!provider.hasKey) return 'bg-surface-container-highest';
   if (provider.status === 'error') return 'bg-error';
   return 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]';
+}
+
+async function checkOllama(): Promise<void> {
+  try {
+    await ollama.checkStatus();
+  } catch {
+    // Keep the current banner state — the user can retry via the button.
+  }
 }
 
 async function pasteKey(id: ProviderId): Promise<void> {
@@ -137,73 +188,136 @@ async function testConnection(id: ProviderId): Promise<void> {
             <span class="text-[11px] leading-3.5">{{ statusText(provider) }}</span>
           </div>
         </div>
-        <div class="relative flex items-center">
-          <input
-            :value="draftKeys[provider.id]"
-            :type="revealed[provider.id] ? 'text' : 'password'"
-            class="w-full rounded-lg border border-outline-variant/30 bg-surface-container-low px-3 py-2 pr-30 font-mono text-xs text-on-surface placeholder:text-outline focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            :placeholder="provider.hasKey ? provider.keyHint ?? '' : `Enter ${provider.label} API key…`"
-            :aria-label="`${provider.label} API key`"
-            autocomplete="off"
-            spellcheck="false"
-            @input="onDraftInput(provider.id, $event)"
-          />
-          <div class="absolute right-2 flex items-center gap-1">
+
+        <!-- Ollama: local daemon card — no key, offline banner instead (§2). -->
+        <template v-if="provider.id === 'ollama'">
+          <p class="text-[11px] leading-3.5 text-outline">
+            Runs entirely on your computer via the Ollama daemon — no API key needed.
+          </p>
+          <div
+            v-if="ollama.status !== null && !ollama.status.running"
+            class="flex items-start justify-between gap-3 rounded-lg border border-error/40 bg-error-container/25 p-3"
+            role="status"
+          >
+            <div class="flex items-start gap-2">
+              <IconAlert class="mt-0.5 size-4 shrink-0 text-error" />
+              <div class="space-y-1">
+                <p class="text-[12px] leading-4.5 font-medium text-error">
+                  Ollama is not running. Please install or start Ollama on your computer.
+                </p>
+                <a
+                  href="https://ollama.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-[11px] leading-3.5 text-on-surface-variant underline underline-offset-2 transition-colors hover:text-primary"
+                >
+                  ollama.com — download &amp; install
+                </a>
+              </div>
+            </div>
             <button
               type="button"
-              class="rounded p-1 text-on-surface-variant transition-colors hover:text-primary"
-              :title="revealed[provider.id] ? 'Hide key' : 'Reveal input'"
-              :aria-label="revealed[provider.id] ? 'Hide key input' : 'Reveal key input'"
-              @click="revealed[provider.id] = !revealed[provider.id]"
+              class="flex shrink-0 items-center gap-1.5 rounded-full border border-outline-variant/40 bg-surface-container px-3 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-surface-container-high disabled:opacity-50"
+              :disabled="ollama.statusLoading"
+              aria-label="Check Ollama connection"
+              @click="checkOllama()"
             >
-              <IconEyeOff v-if="revealed[provider.id]" class="size-4.5" />
-              <IconEye v-else class="size-4.5" />
-            </button>
-            <button
-              type="button"
-              class="rounded p-1 text-on-surface-variant transition-colors hover:text-primary"
-              title="Paste key"
-              :aria-label="`Paste ${provider.label} API key`"
-              @click="pasteKey(provider.id)"
-            >
-              <IconClipboard class="size-4.5" />
-            </button>
-            <button
-              type="button"
-              class="rounded-md border border-outline-variant/40 bg-surface-container px-2 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-surface-container-high disabled:opacity-50"
-              :disabled="busy[provider.id] || (draftKeys[provider.id]?.trim().length ?? 0) < 8"
-              :aria-label="`Save ${provider.label} API key`"
-              @click="saveKey(provider.id)"
-            >
-              Save
-            </button>
-            <button
-              v-if="provider.hasKey"
-              type="button"
-              class="rounded p-1 text-on-surface-variant transition-colors hover:text-error"
-              :class="{ 'text-error': confirmingClear[provider.id] }"
-              :title="confirmingClear[provider.id] ? 'Tap again to confirm' : 'Clear stored key'"
-              :aria-label="confirmingClear[provider.id] ? `Confirm clearing ${provider.label} key` : `Clear ${provider.label} key`"
-              @click="clearKey(provider.id)"
-            >
-              <IconTrash class="size-4.5" />
+              <IconZap class="size-3" />
+              Check Connection
             </button>
           </div>
-        </div>
-        <div class="flex items-center justify-between">
-          <span v-if="provider.hasKey" class="font-mono text-[11px] text-secondary">{{ provider.keyHint }}</span>
-          <span v-else class="text-[11px] text-outline">No key stored — get one from the provider dashboard.</span>
-          <button
-            type="button"
-            class="flex items-center gap-1.5 rounded-full border border-outline-variant/40 bg-surface-container px-3 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-surface-container-high disabled:opacity-50"
-            :disabled="testing[provider.id] || !provider.hasKey"
-            :aria-label="`Test ${provider.label} connection`"
-            @click="testConnection(provider.id)"
+          <div
+            v-else-if="ollama.status !== null && ollama.status.running"
+            class="flex items-center justify-between rounded-lg border border-outline-variant/30 bg-surface-container-low px-3 py-2"
           >
-            <IconZap class="size-3" />
-            {{ testing[provider.id] ? 'Testing…' : 'Test Connection' }}
-          </button>
-        </div>
+            <span class="text-[12px] leading-4.5 text-on-surface-variant">
+              Daemon reachable{{ ollama.status.version ? ` · v${ollama.status.version}` : '' }} — pull curated models from the Model Library.
+            </span>
+            <button
+              type="button"
+              class="flex shrink-0 items-center gap-1.5 rounded-full border border-outline-variant/40 bg-surface-container px-3 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-surface-container-high disabled:opacity-50"
+              :disabled="ollama.statusLoading"
+              aria-label="Check Ollama connection"
+              @click="checkOllama()"
+            >
+              <IconZap class="size-3" />
+              Check Connection
+            </button>
+          </div>
+          <div v-else class="flex items-center justify-between rounded-lg border border-outline-variant/30 bg-surface-container-low px-3 py-2">
+            <span class="text-[11px] text-secondary">Checking the Ollama daemon…</span>
+          </div>
+        </template>
+
+        <template v-else>
+          <div class="relative flex items-center">
+            <input
+              :value="draftKeys[provider.id]"
+              :type="revealed[provider.id] ? 'text' : 'password'"
+              class="w-full rounded-lg border border-outline-variant/30 bg-surface-container-low px-3 py-2 pr-30 font-mono text-xs text-on-surface placeholder:text-outline focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              :placeholder="provider.hasKey ? provider.keyHint ?? '' : `Enter ${provider.label} API key…`"
+              :aria-label="`${provider.label} API key`"
+              autocomplete="off"
+              spellcheck="false"
+              @input="onDraftInput(provider.id, $event)"
+            />
+            <div class="absolute right-2 flex items-center gap-1">
+              <button
+                type="button"
+                class="rounded p-1 text-on-surface-variant transition-colors hover:text-primary"
+                :title="revealed[provider.id] ? 'Hide key' : 'Reveal input'"
+                :aria-label="revealed[provider.id] ? 'Hide key input' : 'Reveal key input'"
+                @click="revealed[provider.id] = !revealed[provider.id]"
+              >
+                <IconEyeOff v-if="revealed[provider.id]" class="size-4.5" />
+                <IconEye v-else class="size-4.5" />
+              </button>
+              <button
+                type="button"
+                class="rounded p-1 text-on-surface-variant transition-colors hover:text-primary"
+                title="Paste key"
+                :aria-label="`Paste ${provider.label} API key`"
+                @click="pasteKey(provider.id)"
+              >
+                <IconClipboard class="size-4.5" />
+              </button>
+              <button
+                type="button"
+                class="rounded-md border border-outline-variant/40 bg-surface-container px-2 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-surface-container-high disabled:opacity-50"
+                :disabled="busy[provider.id] || (draftKeys[provider.id]?.trim().length ?? 0) < 8"
+                :aria-label="`Save ${provider.label} API key`"
+                @click="saveKey(provider.id)"
+              >
+                Save
+              </button>
+              <button
+                v-if="provider.hasKey"
+                type="button"
+                class="rounded p-1 text-on-surface-variant transition-colors hover:text-error"
+                :class="{ 'text-error': confirmingClear[provider.id] }"
+                :title="confirmingClear[provider.id] ? 'Tap again to confirm' : 'Clear stored key'"
+                :aria-label="confirmingClear[provider.id] ? `Confirm clearing ${provider.label} key` : `Clear ${provider.label} key`"
+                @click="clearKey(provider.id)"
+              >
+                <IconTrash class="size-4.5" />
+              </button>
+            </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <span v-if="provider.hasKey" class="font-mono text-[11px] text-secondary">{{ provider.keyHint }}</span>
+            <span v-else class="text-[11px] text-outline">No key stored — get one from the provider dashboard.</span>
+            <button
+              type="button"
+              class="flex items-center gap-1.5 rounded-full border border-outline-variant/40 bg-surface-container px-3 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-surface-container-high disabled:opacity-50"
+              :disabled="testing[provider.id] || !provider.hasKey"
+              :aria-label="`Test ${provider.label} connection`"
+              @click="testConnection(provider.id)"
+            >
+              <IconZap class="size-3" />
+              {{ testing[provider.id] ? 'Testing…' : 'Test Connection' }}
+            </button>
+          </div>
+        </template>
       </div>
     </div>
     <div class="flex items-center gap-1.5 px-2 text-secondary">

@@ -52,6 +52,11 @@ export interface ChatRequest {
   stopSequences: string[];
   /** OpenRouter-only: ask the terminal chunk for token accounting. */
   includeUsage?: boolean;
+  /**
+  Ollama-only: context window tokens, forwarded as `options.num_ctx` (Ollama
+  defaults to 2048 and would truncate roleplay prompts without it).
+  */
+  numCtx?: number | null;
 }
 
 export type StreamEvent =

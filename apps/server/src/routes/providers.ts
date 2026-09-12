@@ -1,4 +1,8 @@
 import {
+  type OllamaPullProgressEvent,
+  ollamaModelsResponseSchema,
+  ollamaPullBodySchema,
+  ollamaStatusResponseSchema,
   type ProviderId,
   providerIdSchema,
   providerInfoSchema,
@@ -8,7 +12,13 @@ import {
   testConnectionResponseSchema,
 } from '@lorekeeper/shared';
 import { z } from 'zod';
-import { getProvider } from '../providers';
+import { getProvider, OLLAMA_CURATED_MODELS, OLLAMA_OFFLINE_MESSAGE } from '../providers';
+import {
+  fetchOllamaStatus,
+  fetchOllamaTags,
+  ollamaTagsMatch,
+  pullOllamaModel,
+} from '../providers/ollama';
 import { ProviderError } from '../providers/types';
 import { KeyStore } from '../services/keyStore';
 import {
@@ -33,12 +43,26 @@ export async function registerProviderRoutes(app: AppInstance): Promise<void> {
     '/api/providers',
     { schema: { response: { 200: z.array(providerInfoSchema) } } },
     async () => {
-      const ids: ProviderId[] = ['openrouter', 'unorouter'];
+      const ids: ProviderId[] = ['openrouter', 'unorouter', 'ollama'];
       return ids.map((id) => {
         const provider = getProvider(id);
         const hasKey = keyStore.hasKey(id);
         const test = getProviderTest(app.db, id);
         const cache = getModelCache(app.db, id);
+        if (id === 'ollama') {
+          // Local daemon: keyless by design. Status mirrors the last explicit
+          // connection test, optimistically 'connected' before the first probe.
+          return {
+            id,
+            label: provider.label,
+            baseUrl: provider.baseUrl,
+            hasKey: true,
+            keyHint: null,
+            status: test?.status ?? ('connected' as const),
+            latencyMs: test?.latencyMs ?? null,
+            modelsFetchedAt: cache?.fetchedAt ?? null,
+          };
+        }
         return {
           id,
           label: provider.label,
@@ -95,6 +119,38 @@ export async function registerProviderRoutes(app: AppInstance): Promise<void> {
     },
     async (request) => {
       const { id } = request.params;
+      const testedAt = new Date().toISOString();
+
+      // Ollama is keyless — its "test" is a daemon reachability probe.
+      if (id === 'ollama') {
+        try {
+          const { latencyMs } = await getProvider(id).testConnection('');
+          setProviderTest(app.db, id, {
+            status: 'connected',
+            latencyMs,
+            code: null,
+            message: null,
+            testedAt,
+          });
+          return { status: 'connected' as const, latencyMs, code: null, message: null };
+        } catch (error) {
+          const providerError =
+            error instanceof ProviderError
+              ? error
+              : new ProviderError('network_error', 'Connection test failed');
+          const message =
+            providerError.code === 'network_error' ? OLLAMA_OFFLINE_MESSAGE : providerError.message;
+          setProviderTest(app.db, id, {
+            status: 'error',
+            latencyMs: null,
+            code: providerError.code,
+            message,
+            testedAt,
+          });
+          return { status: 'error' as const, latencyMs: null, code: providerError.code, message };
+        }
+      }
+
       if (!keyStore.hasKey(id)) {
         setProviderTest(app.db, id, {
           status: 'error',
@@ -121,7 +177,6 @@ export async function registerProviderRoutes(app: AppInstance): Promise<void> {
           message: error instanceof Error ? error.message : 'Stored key could not be decrypted',
         };
       }
-      const testedAt = new Date().toISOString();
       try {
         const { latencyMs } = await getProvider(id).testConnection(apiKey);
         setProviderTest(app.db, id, {
@@ -178,6 +233,21 @@ export async function registerProviderRoutes(app: AppInstance): Promise<void> {
         return { models: cache.models, fetchedAt: cache.fetchedAt, cached: true };
       }
 
+      // Ollama is keyless: its catalog is the static curated whitelist.
+      if (id === 'ollama') {
+        if (cache !== null && !forceRefresh) {
+          return { models: cache.models, fetchedAt: cache.fetchedAt, cached: true };
+        }
+        try {
+          const models = await getProvider(id).listModels('');
+          const fetchedAt = new Date().toISOString();
+          setModelCache(app.db, id, { fetchedAt, models });
+          return { models, fetchedAt, cached: false };
+        } catch (error) {
+          throw toHttpError(error);
+        }
+      }
+
       if (!keyStore.hasKey(id)) {
         if (cache !== null && !forceRefresh) {
           // Graceful: stale catalog beats an error when no key is available.
@@ -207,6 +277,92 @@ export async function registerProviderRoutes(app: AppInstance): Promise<void> {
         return { models, fetchedAt, cached: false };
       } catch (error) {
         throw toHttpError(error);
+      }
+    },
+  );
+
+  // -- Ollama: daemon status, curated catalog state & pull management (§3) ----
+
+  /** Live daemon probe — the Settings banner's source of truth. */
+  app.get(
+    '/api/providers/ollama/status',
+    { schema: { response: { 200: ollamaStatusResponseSchema } } },
+    async () => {
+      return fetchOllamaStatus();
+    },
+  );
+
+  /** Curated whitelist cross-referenced with the daemon's installed models. */
+  app.get(
+    '/api/providers/ollama/models',
+    { schema: { response: { 200: ollamaModelsResponseSchema } } },
+    async () => {
+      const curated = OLLAMA_CURATED_MODELS.map((entry) => ({
+        tag: entry.tag,
+        label: entry.label,
+        huggingFaceUrl: entry.huggingFaceUrl,
+        downloaded: false,
+        sizeBytes: null,
+      }));
+      const status = await fetchOllamaStatus();
+      if (!status.running) {
+        // Offline daemon: every curated model reads as not downloaded — the
+        // UI renders the offline banner instead of a broken catalog.
+        return { running: false, models: curated };
+      }
+      const tags = await fetchOllamaTags();
+      return {
+        running: true,
+        models: curated.map((model) => {
+          const pulled = tags.find((tag) => ollamaTagsMatch(tag.name, model.tag));
+          return {
+            ...model,
+            downloaded: pulled !== undefined,
+            ...(pulled ? { sizeBytes: pulled.size } : {}),
+          };
+        }),
+      };
+    },
+  );
+
+  /**
+   * Streams a curated model pull as SSE progress frames. Hijacked like the
+   * generation endpoints; client disconnect aborts the upstream pull.
+   */
+  app.post(
+    '/api/providers/ollama/pull',
+    { schema: { body: ollamaPullBodySchema } },
+    async (request, reply) => {
+      const { modelTag } = request.body;
+      if (!OLLAMA_CURATED_MODELS.some((entry) => entry.tag === modelTag)) {
+        throw httpError(400, 'invalid_model_tag', 'Only curated Lorekeeper models can be pulled.');
+      }
+      const status = await fetchOllamaStatus();
+      if (!status.running) {
+        throw httpError(503, 'ollama_offline', OLLAMA_OFFLINE_MESSAGE);
+      }
+
+      reply.hijack();
+      const raw = reply.raw;
+      raw.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+        'X-Accel-Buffering': 'no',
+      });
+      const controller = new AbortController();
+      raw.on('close', () => controller.abort());
+      const writeEvent = (event: OllamaPullProgressEvent): void => {
+        if (raw.writableEnded || raw.destroyed) return;
+        raw.write(`data: ${JSON.stringify(event)}\n\n`);
+      };
+      try {
+        for await (const event of pullOllamaModel(modelTag, controller.signal)) {
+          writeEvent(event);
+          if (event.status === 'success' || event.status === 'error') break;
+        }
+      } finally {
+        raw.end();
       }
     },
   );

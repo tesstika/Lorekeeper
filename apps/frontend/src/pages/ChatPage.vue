@@ -8,6 +8,7 @@ import ContextRibbon from '@/components/chat/ContextRibbon.vue';
 import MessageItem from '@/components/chat/MessageItem.vue';
 import MessageList from '@/components/chat/MessageList.vue';
 import PromptPreviewModal from '@/components/chat/PromptPreviewModal.vue';
+import OllamaDownloadModal from '@/components/ollama/OllamaDownloadModal.vue';
 import ConfirmDialog from '@/components/ui/ConfirmDialog.vue';
 import ToastHost from '@/components/ui/ToastHost.vue';
 import { useCharactersStore } from '@/stores/characters';
@@ -50,13 +51,6 @@ watch(chatId, async (id) => {
 
 const character = computed(() => detail.value?.character ?? null);
 const personaName = computed(() => detail.value?.persona?.name ?? null);
-
-const effectiveModelLabel = computed(() => {
-  const modelId = detail.value?.chat.modelId ?? settingsStore.globalDefaults.modelId;
-  if (!modelId) return 'No model';
-  const short = modelId.includes('/') ? (modelId.split('/').pop() ?? modelId) : modelId;
-  return short.replace(/[-_]/g, ' ');
-});
 
 const composer = computed(() => settingsStore.composer);
 
@@ -169,6 +163,49 @@ async function onActivate(messageId: string, variantId: string): Promise<void> {
     ui.notify(describeApiError(error), 'error');
   }
 }
+
+// ---------------------------------------------------------------------------
+// Ollama un-downloaded model flow (feature spec §2): the generation pre-flight
+// refuses with `model_not_downloaded`; offer the download instead of freezing.
+// ---------------------------------------------------------------------------
+
+const downloadTag = ref<string | null>(null);
+const retryAfterDownload = ref<{ chatId: string; targetMessageId: string | null } | null>(null);
+
+function shortTagLabel(tag: string): string {
+  return tag.includes('/') ? (tag.split('/').pop() ?? tag) : tag;
+}
+
+watch(
+  () => streaming.pendingDownload,
+  async (pending) => {
+    if (!pending) return;
+    const accepted = await ui.confirm({
+      title: 'Model not downloaded',
+      message: `“${shortTagLabel(pending.modelTag)}” is not downloaded yet. Download it with Ollama now? Large models can take a while — live progress will be shown.`,
+      confirmLabel: 'Download model',
+      cancelLabel: 'Not now',
+    });
+    streaming.clearPendingDownload();
+    if (!accepted) return;
+    retryAfterDownload.value = { chatId: pending.chatId, targetMessageId: pending.targetMessageId };
+    downloadTag.value = pending.modelTag;
+  },
+);
+
+function closeDownload(): void {
+  downloadTag.value = null;
+  retryAfterDownload.value = null;
+}
+
+async function onDownloadSuccess(): Promise<void> {
+  downloadTag.value = null;
+  const retry = retryAfterDownload.value;
+  retryAfterDownload.value = null;
+  if (retry) {
+    await streaming.start({ chatId: retry.chatId, targetMessageId: retry.targetMessageId });
+  }
+}
 </script>
 
 <template>
@@ -192,13 +229,6 @@ async function onActivate(messageId: string, variantId: string): Promise<void> {
           </div>
           <span class="truncate text-[15px] font-semibold text-on-surface">
             {{ detail?.chat.title ?? character?.name ?? '…' }}
-          </span>
-          <span class="flex shrink-0 items-center gap-1 rounded-full border border-outline-variant/30 bg-surface-container-high px-2 py-0.5 text-[10.5px] font-medium text-primary">
-            <span
-              class="size-1.5 rounded-full bg-primary"
-              :class="streaming.isStreaming ? 'animate-pulse' : ''"
-            />
-            {{ effectiveModelLabel }}
           </span>
         </div>
         <button
@@ -269,6 +299,11 @@ async function onActivate(messageId: string, variantId: string): Promise<void> {
       :open="previewOpen"
       :chat-id="chatId"
       @close="previewOpen = false"
+    />
+    <OllamaDownloadModal
+      :tag="downloadTag"
+      @close="closeDownload()"
+      @success="onDownloadSuccess()"
     />
     <ToastHost />
     <ConfirmDialog />

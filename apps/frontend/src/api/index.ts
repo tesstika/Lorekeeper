@@ -15,6 +15,8 @@ import type {
   EditMessageResponse,
   ImportCardResponse,
   MessageInput,
+  OllamaModelsResponse,
+  OllamaStatusResponse,
   Persona,
   PersonaCreateInput,
   PersonaPatch,
@@ -91,6 +93,10 @@ export const api = {
     request<TestConnectionResponse>('POST', `/providers/${id}/test`),
   getProviderModels: (id: ProviderId, refresh = false) =>
     request<ProviderModelsResponse>('GET', `/providers/${id}/models${refresh ? '?refresh=1' : ''}`),
+
+  // -- Ollama (local provider) ------------------------------------------------
+  getOllamaStatus: () => request<OllamaStatusResponse>('GET', '/providers/ollama/status'),
+  getOllamaModels: () => request<OllamaModelsResponse>('GET', '/providers/ollama/models'),
 
   getPresets: () => request<Preset[]>('GET', '/presets'),
   createPreset: (input: PresetCreateInput) => request<Preset>('POST', '/presets', input),
