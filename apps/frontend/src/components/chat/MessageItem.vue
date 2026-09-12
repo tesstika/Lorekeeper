@@ -174,9 +174,10 @@ async function requestDelete(): Promise<void> {
       <div class="flex min-w-0 items-center gap-2">
         <div
           v-if="tone === 'user'"
-          class="flex size-5 shrink-0 items-center justify-center rounded-full border border-primary/40 bg-primary/20 text-[10px] font-bold text-primary"
+          class="flex size-5 shrink-0 items-center justify-center overflow-hidden rounded-full border border-primary/40 bg-primary/20 text-[10px] font-bold text-primary"
         >
-          {{ initials }}
+          <img v-if="avatarPath" :src="avatarPath" :alt="displayName" class="size-full object-cover" />
+          <template v-else>{{ initials }}</template>
         </div>
         <div v-else class="flex size-5 shrink-0 items-center justify-center overflow-hidden rounded-full bg-surface-container ring-1 ring-outline-variant/30">
           <img v-if="avatarPath" :src="avatarPath" :alt="displayName" class="size-full object-cover" />

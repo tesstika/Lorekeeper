@@ -51,6 +51,13 @@ describe('GET /api/health', () => {
       .all()
       .map((row) => row.name);
     expect(characterColumns).toContain('jailbreak');
+    // Persona bugfix: chats.persona_none carries the explicit "play without a
+    // persona" override (the '' sentinel violated the personas FK).
+    const chatColumns = app.sqlite
+      .query<{ name: string }, []>('PRAGMA table_info(chats)')
+      .all()
+      .map((row) => row.name);
+    expect(chatColumns).toContain('persona_none');
   });
 
   it('returns a 404 envelope for unknown api routes', async () => {

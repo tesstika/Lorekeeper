@@ -65,6 +65,7 @@ export const chats = sqliteTable('chats', {
     .notNull()
     .references(() => characters.id, { onDelete: 'restrict' }),
   personaId: text().references(() => personas.id, { onDelete: 'set null' }),
+  personaNone: integer({ mode: 'boolean' }).notNull().default(false),
   title: text().notNull(),
   ribbon: text(),
   status: text().$type<ChatStatus>().notNull().default('in_progress'),

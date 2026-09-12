@@ -504,7 +504,7 @@ export const chatStatusSchema = z.enum(chatStatuses);
 
 export const createChatInputSchema = z.object({
   characterId: z.string().min(1),
-  personaId: z.string().nullable().optional(),
+  personaId: z.string().min(1).nullable().optional(),
   providerId: providerIdSchema.nullable().optional(),
   modelId: z.string().max(200).nullable().optional(),
   presetId: z.string().nullable().optional(),
@@ -515,6 +515,7 @@ export const chatSchema = z.object({
   id: z.string(),
   characterId: z.string(),
   personaId: z.string().nullable(),
+  personaNone: z.boolean(),
   title: z.string(),
   ribbon: z.string().nullable(),
   status: chatStatusSchema,
@@ -547,7 +548,10 @@ export const chatsListQuerySchema = z.object({
 export const chatPatchSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   ribbon: z.string().max(300).nullable().optional(),
-  personaId: z.string().nullable().optional(),
+  // personaId is a strict id-or-null: '' would violate the personas FK, so
+  // the explicit "play without a persona" override is its own boolean flag.
+  personaId: z.string().min(1).nullable().optional(),
+  personaNone: z.boolean().optional(),
   providerId: providerIdSchema.nullable().optional(),
   modelId: z.string().max(200).nullable().optional(),
   presetId: z.string().nullable().optional(),

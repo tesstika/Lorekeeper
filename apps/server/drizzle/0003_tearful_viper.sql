@@ -1,0 +1,1 @@
+ALTER TABLE `chats` ADD `persona_none` integer DEFAULT false NOT NULL;

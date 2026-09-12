@@ -41,8 +41,9 @@ export interface ResolvedGenerationConfig {
 /**
  * Effective overrides (plan §4.2): chat.* ?? globalDefaults.* for provider,
  * model, preset and persona. Zero defaults → explicit `no_model_configured`
- * (M1 audit D-S1). An empty-string persona/preset id acts as an explicit
- * "None" chat override (falsy → no persona/preset lookup).
+ * (M1 audit D-S1). `chats.personaNone` marks an explicit "play without a
+ * persona" override — it suppresses both the chat persona and the global
+ * default (M4-audit §4.3 fix; the '' sentinel violated the personas FK).
  */
 export function resolveGenerationConfig(db: LorekeeperDb, chat: ChatRow): ResolvedGenerationConfig {
   const defaults = getGlobalDefaults(db);
@@ -63,7 +64,7 @@ export function resolveGenerationConfig(db: LorekeeperDb, chat: ChatRow): Resolv
   const cache = getModelCache(db, providerId);
   const modelInfo = cache?.models.find((model) => model.id === modelId) ?? null;
   const presetId = chat.presetId ?? defaults.presetId;
-  const personaId = chat.personaId ?? defaults.personaId;
+  const personaId = chat.personaNone ? null : (chat.personaId ?? defaults.personaId);
   return { providerId, modelId, presetId, personaId, modelInfo, hasKey: false };
 }
 

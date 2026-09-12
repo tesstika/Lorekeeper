@@ -353,6 +353,38 @@ describe('MessageItem', () => {
     expect(wrapper.find('[aria-label="Delete message"]').exists()).toBe(true);
   });
 
+  it('renders the persona avatar for user turns, initials only when absent', () => {
+    const withAvatar = mount(
+      host(
+        '<div><MessageItem :message="message" display-name="Mike" avatar-path="/media/mike.png" tone="user" /></div>',
+        { MessageItem },
+      ),
+      {
+        data: () => ({ message: message({ role: 'user', groupId: null, activeVariantId: 'v1' }) }),
+        global: { plugins: [vaporInteropPlugin] },
+      },
+    );
+    const img = withAvatar.find('img');
+    expect(img.exists()).toBe(true);
+    expect(img.attributes('src')).toBe('/media/mike.png');
+    expect(img.attributes('alt')).toBe('Mike');
+    withAvatar.unmount();
+
+    const withoutAvatar = mount(
+      host(
+        '<div><MessageItem :message="message" display-name="Mike" :avatar-path="null" tone="user" /></div>',
+        { MessageItem },
+      ),
+      {
+        data: () => ({ message: message({ role: 'user', groupId: null, activeVariantId: 'v1' }) }),
+        global: { plugins: [vaporInteropPlugin] },
+      },
+    );
+    expect(withoutAvatar.find('img').exists()).toBe(false);
+    expect(withoutAvatar.text()).toContain('M');
+    withoutAvatar.unmount();
+  });
+
   it('offers Save (default) and Save & regenerate after for user edits (D8)', async () => {
     const Host = host(
       '<div><MessageItem :message="message" display-name="Julian" avatar-path="null" tone="user" @save="saved.push($event)" /></div>',

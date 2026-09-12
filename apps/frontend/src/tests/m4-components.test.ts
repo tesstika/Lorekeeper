@@ -363,13 +363,14 @@ vi.mock('@/api', async (importOriginal) => {
   };
 });
 
-async function mountSettingsSheet() {
+async function mountSettingsSheet(chatOverrides: Record<string, unknown> = {}) {
   const chatsStore = useChatsStore();
   chatsStore.activeChat = {
     chat: {
       id: 'chat-1',
       characterId: 'c1',
       personaId: null,
+      personaNone: false,
       title: 'The Wax Seal',
       ribbon: null,
       status: 'in_progress',
@@ -380,6 +381,7 @@ async function mountSettingsSheet() {
       lastMessageAt: NOW,
       lastMessagePreview: null,
       createdAt: NOW,
+      ...chatOverrides,
     },
     character: { id: 'c1', name: 'Vivienne' },
     persona: null,
@@ -465,6 +467,50 @@ describe('ChatSettingsSheet overrides (M4)', () => {
 
     const call = apiState.updateChatCalls[0];
     expect(call?.patch).toMatchObject({ modelId: null, contextBudgetTokens: null });
+    wrapper.unmount();
+  });
+
+  it('preselects the assigned persona and never wipes it on an unchanged save', async () => {
+    // Regression: under vapor interop a select :value binding can land before
+    // the async-loaded persona options exist and is never retried — the sheet
+    // then displayed "Default from settings" for an assigned persona and a
+    // single Save PATCHed the persona override away. The options-side
+    // :selected binding re-seeds correctly.
+    const wrapper = await mountSettingsSheet({ personaId: 'persona-1' });
+    const select = wrapper.find('#override-persona');
+    expect((select.element as HTMLSelectElement).value).toBe('persona-1');
+
+    await findSaveButton(wrapper).trigger('click');
+    await flushPromises();
+
+    // Saving with unchanged pickers must not carry any persona keys — the
+    // empty-patch call is the sheet's normal no-op save (server short-circuits).
+    expect(apiState.updateChatCalls).toHaveLength(1);
+    expect(apiState.updateChatCalls[0]?.patch).toEqual({});
+    wrapper.unmount();
+  });
+
+  it('persists an explicit persona choice through PATCH', async () => {
+    const wrapper = await mountSettingsSheet();
+    await wrapper.find('#override-persona').setValue('persona-1');
+
+    await findSaveButton(wrapper).trigger('click');
+    await flushPromises();
+
+    const call = apiState.updateChatCalls[0];
+    expect(call?.patch).toMatchObject({ personaId: 'persona-1', personaNone: false });
+    wrapper.unmount();
+  });
+
+  it('sends personaNone (never an empty personaId) when "None" is picked', async () => {
+    const wrapper = await mountSettingsSheet({ personaId: 'persona-1' });
+    await wrapper.find('#override-persona').setValue('__none__');
+
+    await findSaveButton(wrapper).trigger('click');
+    await flushPromises();
+
+    const call = apiState.updateChatCalls[0];
+    expect(call?.patch).toMatchObject({ personaId: null, personaNone: true });
     wrapper.unmount();
   });
 });

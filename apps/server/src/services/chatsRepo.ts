@@ -8,6 +8,7 @@ import {
   listMessageRows,
   type MessageRow,
 } from './messagesRepo';
+import { getGlobalDefaults } from './settingsRepo';
 
 export type ChatRow = typeof chats.$inferSelect;
 export type CharacterRow = typeof characters.$inferSelect;
@@ -33,6 +34,7 @@ export function toChat(row: ChatRow) {
     id: row.id,
     characterId: row.characterId,
     personaId: row.personaId,
+    personaNone: row.personaNone,
     title: row.title,
     ribbon: row.ribbon,
     status: row.status,
@@ -54,6 +56,7 @@ export interface ChatSummaryRecord {
   id: string;
   title: string;
   personaId: string | null;
+  personaNone: boolean;
   ribbon: string | null;
   status: 'in_progress' | 'archived';
   providerId: 'openrouter' | 'unorouter' | null;
@@ -279,8 +282,13 @@ export function getChatDetail(db: LorekeeperDb, id: string): ChatDetailRecord | 
     .where(eq(characters.id, chat.characterId))
     .all()[0];
   if (!character) return null;
-  const persona = chat.personaId
-    ? (db.select().from(personas).where(eq(personas.id, chat.personaId)).all()[0] ?? null)
+  // The detail payload carries the *effective* persona (chat override, else
+  // the global default; personaNone suppresses both) so the chat view renders
+  // exactly what generation resolves — persona name, description and avatar.
+  const defaults = getGlobalDefaults(db);
+  const effectivePersonaId = chat.personaNone ? null : (chat.personaId ?? defaults.personaId);
+  const persona = effectivePersonaId
+    ? (db.select().from(personas).where(eq(personas.id, effectivePersonaId)).all()[0] ?? null)
     : null;
   const rows = listMessageRows(db, id);
   const attachmentRows = getAttachmentRows(

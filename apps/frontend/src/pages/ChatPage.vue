@@ -239,7 +239,7 @@ async function onActivate(messageId: string, variantId: string): Promise<void> {
           :key="`${message.groupId ?? message.id}:${message.seq}`"
           :message="message"
           :display-name="message.role === 'user' ? (personaName ?? 'You') : (character?.name ?? 'Character')"
-          :avatar-path="message.role === 'user' ? null : (character?.avatarPath ?? null)"
+          :avatar-path="message.role === 'user' ? (detail.persona?.avatarPath ?? null) : (character?.avatarPath ?? null)"
           :tone="message.role === 'user' ? 'user' : 'character'"
           :streaming-variant-id="streaming.isStreaming ? streaming.streamingVariantId : null"
           :caret-blink-ms="composer.caretBlinkMs"

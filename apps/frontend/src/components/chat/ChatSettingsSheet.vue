@@ -45,11 +45,15 @@ watch(
     title.value = chat.title;
     ribbon.value = chat.ribbon ?? '';
 
-    // Overrides re-seed from the persisted chat row on every open.
+    // Overrides re-seed from the persisted chat row on every open. personaNone
+    // (explicit "play without a persona") is distinct from DEFAULT (follow the
+    // global setting) — the select options carry :selected for vapor interop
+    // (M1 §4.3: a select :value binding can land before its options exist and
+    // is never retried, which left async-loaded persona options unselected).
     modelChoice.value = chat.modelId ?? DEFAULT;
     manualModelId.value = '';
     presetChoice.value = chat.presetId ?? DEFAULT;
-    personaChoice.value = chat.personaId ?? DEFAULT;
+    personaChoice.value = chat.personaNone ? NONE : (chat.personaId ?? DEFAULT);
     budgetChoice.value = chat.contextBudgetTokens != null ? CUSTOM_BUDGET : DEFAULT;
     budgetValue.value =
       chat.contextBudgetTokens ?? settingsStore.globalDefaults.contextBudgetTokens;
@@ -119,15 +123,10 @@ async function save(): Promise<void> {
         ? manualModelId.value.trim() || null
         : modelChoice.value;
   const presetId = presetChoice.value === DEFAULT ? null : presetChoice.value;
-  // '' keeps the DEFAULT sentinel free for persona — the explicit "None"
-  // choice stores an empty string, which every server path treats as "no
-  // persona" (falsy) while staying distinct from null (= follow settings).
-  const personaId =
-    personaChoice.value === DEFAULT
-      ? null
-      : personaChoice.value === NONE
-        ? ''
-        : personaChoice.value;
+  // personaNone is the explicit "None — play without a persona" override;
+  // personaId stays a strict id-or-null (never '' — the personas FK rejects it).
+  const personaNone = personaChoice.value === NONE;
+  const personaId = personaNone || personaChoice.value === DEFAULT ? null : personaChoice.value;
   const contextBudgetTokens = budgetChoice.value === CUSTOM_BUDGET ? budgetValue.value : null;
 
   try {
@@ -140,7 +139,9 @@ async function save(): Promise<void> {
       ...(ribbon.value !== (chat.ribbon ?? '') ? { ribbon: ribbon.value } : {}),
       ...(modelId !== (chat.modelId ?? null) ? { modelId } : {}),
       ...(presetId !== (chat.presetId ?? null) ? { presetId } : {}),
-      ...(personaId !== (chat.personaId ?? null) ? { personaId } : {}),
+      ...(personaId !== (chat.personaId ?? null) || personaNone !== chat.personaNone
+        ? { personaId, personaNone }
+        : {}),
       ...(contextBudgetTokens !== (chat.contextBudgetTokens ?? null)
         ? { contextBudgetTokens }
         : {}),
@@ -200,14 +201,18 @@ async function removeChat(): Promise<void> {
     <label class="mt-3 block text-[12px] font-medium text-on-surface-variant" for="override-model">Model</label>
     <select
       id="override-model"
-      :value="modelChoice"
       class="mt-1 w-full rounded-lg border border-outline-variant/40 bg-surface-container-low px-3 py-2 text-[13px] text-on-surface outline-none focus:border-primary/60"
       @change="modelChoice = ($event.target as HTMLSelectElement).value"
     >
-      <option :value="DEFAULT">Default from settings ({{ defaultModelLabel }})</option>
-      <option :value="MANUAL">Manual model id…</option>
+      <option :value="DEFAULT" :selected="modelChoice === DEFAULT">Default from settings ({{ defaultModelLabel }})</option>
+      <option :value="MANUAL" :selected="modelChoice === MANUAL">Manual model id…</option>
       <option v-if="catalogLoading" disabled>loading catalog…</option>
-      <option v-for="model in providerModels" :key="model.id" :value="model.id">
+      <option
+        v-for="model in providerModels"
+        :key="model.id"
+        :value="model.id"
+        :selected="modelChoice === model.id"
+      >
         {{ model.name }}
       </option>
     </select>
@@ -225,12 +230,16 @@ async function removeChat(): Promise<void> {
     <label class="mt-3 block text-[12px] font-medium text-on-surface-variant" for="override-preset">Preset</label>
     <select
       id="override-preset"
-      :value="presetChoice"
       class="mt-1 w-full rounded-lg border border-outline-variant/40 bg-surface-container-low px-3 py-2 text-[13px] text-on-surface outline-none focus:border-primary/60"
       @change="presetChoice = ($event.target as HTMLSelectElement).value"
     >
-      <option :value="DEFAULT">Default from settings ({{ defaultPresetLabel }})</option>
-      <option v-for="preset in settingsStore.presets" :key="preset.id" :value="preset.id">
+      <option :value="DEFAULT" :selected="presetChoice === DEFAULT">Default from settings ({{ defaultPresetLabel }})</option>
+      <option
+        v-for="preset in settingsStore.presets"
+        :key="preset.id"
+        :value="preset.id"
+        :selected="presetChoice === preset.id"
+      >
         {{ preset.name }}
       </option>
     </select>
@@ -238,13 +247,17 @@ async function removeChat(): Promise<void> {
     <label class="mt-3 block text-[12px] font-medium text-on-surface-variant" for="override-persona">Persona</label>
     <select
       id="override-persona"
-      :value="personaChoice"
       class="mt-1 w-full rounded-lg border border-outline-variant/40 bg-surface-container-low px-3 py-2 text-[13px] text-on-surface outline-none focus:border-primary/60"
       @change="personaChoice = ($event.target as HTMLSelectElement).value"
     >
-      <option :value="DEFAULT">Default from settings ({{ defaultPersonaLabel }})</option>
-      <option :value="NONE">None — play without a persona</option>
-      <option v-for="persona in charactersStore.personas" :key="persona.id" :value="persona.id">
+      <option :value="DEFAULT" :selected="personaChoice === DEFAULT">Default from settings ({{ defaultPersonaLabel }})</option>
+      <option :value="NONE" :selected="personaChoice === NONE">None — play without a persona</option>
+      <option
+        v-for="persona in charactersStore.personas"
+        :key="persona.id"
+        :value="persona.id"
+        :selected="personaChoice === persona.id"
+      >
         {{ persona.name }}
       </option>
     </select>
@@ -252,12 +265,11 @@ async function removeChat(): Promise<void> {
     <label class="mt-3 block text-[12px] font-medium text-on-surface-variant" for="override-budget">Context budget</label>
     <select
       id="override-budget"
-      :value="budgetChoice"
       class="mt-1 w-full rounded-lg border border-outline-variant/40 bg-surface-container-low px-3 py-2 text-[13px] text-on-surface outline-none focus:border-primary/60"
       @change="budgetChoice = ($event.target as HTMLSelectElement).value"
     >
-      <option :value="DEFAULT">Default from settings ({{ settingsStore.globalDefaults.contextBudgetTokens }} tokens)</option>
-      <option :value="CUSTOM_BUDGET">Custom budget…</option>
+      <option :value="DEFAULT" :selected="budgetChoice === DEFAULT">Default from settings ({{ settingsStore.globalDefaults.contextBudgetTokens }} tokens)</option>
+      <option :value="CUSTOM_BUDGET" :selected="budgetChoice === CUSTOM_BUDGET">Custom budget…</option>
     </select>
     <div v-if="budgetChoice === CUSTOM_BUDGET" class="mt-2 flex items-center gap-3">
       <input

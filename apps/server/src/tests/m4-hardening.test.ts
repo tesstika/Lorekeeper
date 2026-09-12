@@ -400,3 +400,145 @@ describe('cleanupOrphanMedia (attachment GC)', () => {
     await app.inject({ method: 'DELETE', url: `/api/chats/${chatId}` });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Persona overrides — detail payload, prompt injection, explicit none
+// ---------------------------------------------------------------------------
+
+describe('persona overrides', () => {
+  async function createPersona(overrides: Record<string, unknown> = {}): Promise<string> {
+    const persona = await app.inject({
+      method: 'POST',
+      url: '/api/personas',
+      payload: {
+        name: 'Mike',
+        description: 'A quiet archivist with ink-stained hands.',
+        avatarPath: 'media/mike.png',
+        ...overrides,
+      },
+    });
+    expect(persona.statusCode).toBe(201);
+    return (persona.json() as { id: string }).id;
+  }
+
+  async function createChatWithPersona(personaId: string | null): Promise<string> {
+    const character = await app.inject({
+      method: 'POST',
+      url: '/api/characters',
+      payload: { name: 'Persona Host' },
+    });
+    const characterId = (character.json() as { id: string }).id;
+    const chat = await app.inject({
+      method: 'POST',
+      url: '/api/chats',
+      payload: personaId ? { characterId, personaId } : { characterId },
+    });
+    expect(chat.statusCode).toBe(201);
+    return (chat.json() as { chat: { id: string } }).chat.id;
+  }
+
+  it('returns the effective persona (name/description/avatarPath) in the chat detail', async () => {
+    const personaId = await createPersona();
+    const chatId = await createChatWithPersona(personaId);
+
+    const detail = await app.inject({ method: 'GET', url: `/api/chats/${chatId}` });
+    expect(detail.statusCode).toBe(200);
+    const body = detail.json();
+    expect(body.chat.personaId).toBe(personaId);
+    expect(body.chat.personaNone).toBe(false);
+    expect(body.persona).toMatchObject({
+      id: personaId,
+      name: 'Mike',
+      description: 'A quiet archivist with ink-stained hands.',
+      avatarPath: 'media/mike.png',
+    });
+
+    await app.inject({ method: 'DELETE', url: `/api/chats/${chatId}` });
+  });
+
+  it('injects the persona name and description into prompt assembly', async () => {
+    await configureEngine();
+    const personaId = await createPersona();
+    const chatId = await createChatWithPersona(personaId);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: `/api/chats/${chatId}/prompt-preview`,
+    });
+    expect(response.statusCode).toBe(200);
+    const body = response.json() as PreviewBody;
+    expect(body.system).toContain('<Persona>');
+    expect(body.system).toContain('Mike');
+    expect(body.system).toContain('A quiet archivist with ink-stained hands.');
+
+    await app.inject({ method: 'DELETE', url: `/api/chats/${chatId}` });
+  });
+
+  it('personaNone suppresses both the chat persona and the global default', async () => {
+    await configureEngine();
+    const personaId = await createPersona({ avatarPath: null });
+    await app.inject({
+      method: 'PATCH',
+      url: '/api/settings',
+      payload: { globalDefaults: { personaId } },
+    });
+    // No chat-level persona → the global default (Mike) is effective…
+    const chatId = await createChatWithPersona(null);
+    const before = await app.inject({ method: 'GET', url: `/api/chats/${chatId}/prompt-preview` });
+    expect((before.json() as PreviewBody).system).toContain('Mike');
+
+    // …until the chat opts out explicitly.
+    const patched = await app.inject({
+      method: 'PATCH',
+      url: `/api/chats/${chatId}`,
+      payload: { personaId: null, personaNone: true },
+    });
+    expect(patched.statusCode).toBe(200);
+    expect(patched.json().personaNone).toBe(true);
+
+    const detail = await app.inject({ method: 'GET', url: `/api/chats/${chatId}` });
+    expect(detail.json().persona).toBeNull();
+    const after = await app.inject({ method: 'GET', url: `/api/chats/${chatId}/prompt-preview` });
+    const body = after.json() as PreviewBody;
+    expect(body.system).not.toContain('Mike');
+    expect(body.system).not.toContain('A quiet archivist');
+    expect(body.system).toContain('the user');
+
+    await app.inject({ method: 'DELETE', url: `/api/chats/${chatId}` });
+    await app.inject({
+      method: 'PATCH',
+      url: '/api/settings',
+      payload: { globalDefaults: { personaId: null } },
+    });
+  });
+
+  it('rejects an empty-string personaId with a validation error (never an FK 500)', async () => {
+    const chatId = await createChatWithPersona(null);
+    const response = await app.inject({
+      method: 'PATCH',
+      url: `/api/chats/${chatId}`,
+      payload: { personaId: '' },
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json().code).toBe('validation_error');
+    await app.inject({ method: 'DELETE', url: `/api/chats/${chatId}` });
+  });
+
+  it('PATCHes without persona keys leave the persona override untouched', async () => {
+    const personaId = await createPersona();
+    const chatId = await createChatWithPersona(personaId);
+
+    const patched = await app.inject({
+      method: 'PATCH',
+      url: `/api/chats/${chatId}`,
+      payload: { title: 'Renamed Chronicle' },
+    });
+    expect(patched.statusCode).toBe(200);
+
+    const detail = await app.inject({ method: 'GET', url: `/api/chats/${chatId}` });
+    expect(detail.json().chat.personaId).toBe(personaId);
+    expect(detail.json().persona).toMatchObject({ id: personaId, name: 'Mike' });
+
+    await app.inject({ method: 'DELETE', url: `/api/chats/${chatId}` });
+  });
+});
