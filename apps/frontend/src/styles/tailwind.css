@@ -274,6 +274,119 @@ input[type="range"].lk-range::-moz-range-track {
   }
 }
 
+/* ---------------------------------------------------------------------------
+ * Atmospheric background (BackgroundAtmosphere.vue) — keyframes ported from
+ * lorekeeper-background-concepts.html. Transform/opacity only (GPU-composited);
+ * the fixed underlay sits at z-index -10 inside the isolated app shell so
+ * opaque cards and sticky headers paint above it, never the reverse.
+ * ------------------------------------------------------------------------- */
+.lk-atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Embers: golden sparks drifting upward with a slight horizontal wander. */
+.lk-ember {
+  position: absolute;
+  bottom: -10px;
+  width: 3px;
+  height: 3px;
+  border-radius: 9999px;
+  background: #e8c98a;
+  box-shadow: 0 0 6px 2px rgba(232, 201, 138, 65%);
+  animation: lk-ember-rise linear infinite;
+  will-change: transform, opacity;
+}
+@keyframes lk-ember-rise {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.85;
+  }
+  85% {
+    opacity: 0.45;
+  }
+  100% {
+    transform: translate(var(--lk-drift, 20px), -680px);
+    opacity: 0;
+  }
+}
+
+/* Stars: a subtle twinkling field over the void. */
+.lk-star {
+  position: absolute;
+  border-radius: 9999px;
+  background: #e4d9ff;
+  box-shadow: 0 0 3px rgba(228, 217, 255, 80%);
+  animation: lk-twinkle ease-in-out infinite;
+  will-change: opacity;
+}
+@keyframes lk-twinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
+/* Aurora: slow, breathing blurred blobs screen-blended over the void. */
+.lk-aurora-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(55px);
+  opacity: 0.38;
+  mix-blend-mode: screen;
+  will-change: transform;
+}
+.lk-aurora-b1 {
+  width: 220px;
+  height: 220px;
+  background: #7c5cff;
+  top: -50px;
+  left: -50px;
+  animation: lk-drift 20s ease-in-out infinite;
+}
+.lk-aurora-b2 {
+  width: 240px;
+  height: 240px;
+  background: #b06bd1;
+  bottom: -70px;
+  right: -50px;
+  animation: lk-drift 26s ease-in-out infinite reverse;
+}
+.lk-aurora-b3 {
+  width: 190px;
+  height: 190px;
+  background: #5a4bd6;
+  top: 42%;
+  left: 20%;
+  animation: lk-drift 32s ease-in-out infinite;
+}
+@keyframes lk-drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(22px, 18px) scale(1.15);
+  }
+}
+
+/* Soft gradient fade for single-line previews (chat cards) — replaces the
+   hard line-clamp cut with a mask fade. Kept as a dedicated class because the
+   Tailwind v4 arbitrary-value parser does not accept mask-image gradients. */
+.preview-fade-edge {
+  -webkit-mask-image: linear-gradient(to right, black 82%, transparent 100%);
+  mask-image: linear-gradient(to right, black 82%, transparent 100%);
+}
+
 /* Reduced motion: static caret, no fades, no blink (§6.7 accessibility).
    The global collapse below also covers everything added in M4 — the header
    model-pill pulse, skeleton pulses, delivered dot and any sheet/modal
@@ -288,6 +401,17 @@ input[type="range"].lk-range::-moz-range-track {
   .lk-delivered {
     animation: none;
     opacity: 1;
+  }
+  .lk-ember,
+  .lk-star,
+  .lk-aurora-blob {
+    animation: none;
+  }
+  .lk-aurora-blob {
+    opacity: 0.28;
+  }
+  .lk-star {
+    opacity: 0.4;
   }
   *,
   *::before,

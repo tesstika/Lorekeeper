@@ -10,6 +10,7 @@ import {
   formatBytes,
   formatContextLength,
   formatModelPricing,
+  formatShortModelName,
   isVisionModel,
   modalityUnknown,
 } from '@/utils/model-format';
@@ -64,6 +65,11 @@ const filteredModels = computed(() => {
   );
 });
 const fetchedAt = computed(() => store.activeProviderCatalog?.fetchedAt ?? null);
+
+/** Badge-clean name; the raw id stays in the tooltip and the library modal. */
+const activeModelLabel = computed(() =>
+  store.activeModelId ? formatShortModelName(store.activeModelId) : 'No model selected',
+);
 
 const manualModelId = ref('');
 const manualDirty = computed(() => manualModelId.value.trim() !== (store.activeModelId ?? ''));
@@ -228,8 +234,11 @@ function contextTag(model: ModelInfo): string | null {
             <IconBrain class="size-6" />
           </div>
           <div>
-            <div class="text-[16px] font-semibold leading-5.5 text-on-surface transition-colors group-hover:text-primary">
-              {{ store.activeModelId ?? 'No model selected' }}
+            <div
+              class="text-[16px] font-semibold leading-5.5 text-on-surface transition-colors group-hover:text-primary"
+              :title="store.activeModelId ?? undefined"
+            >
+              {{ activeModelLabel }}
             </div>
             <div class="mt-0.5 flex items-center gap-2">
               <span

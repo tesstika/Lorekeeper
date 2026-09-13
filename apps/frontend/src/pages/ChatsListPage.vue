@@ -9,6 +9,7 @@ import ToastHost from '@/components/ui/ToastHost.vue';
 import { useCharactersStore } from '@/stores/characters';
 import { useChatsStore } from '@/stores/chats';
 import { useSettingsStore } from '@/stores/settings';
+import { formatShortModelName } from '@/utils/model-format';
 import { formatRelativeTime, initialsOf } from '@/utils/time';
 
 const router = useRouter();
@@ -56,9 +57,8 @@ const summaryLabel = computed(() => {
 });
 
 function modelPill(modelId: string | null): string {
-  const effective = modelId ?? settingsStore.globalDefaults.modelId ?? 'No model';
-  const short = effective.includes('/') ? (effective.split('/').pop() ?? effective) : effective;
-  return short.replace(/[-_]/g, ' ');
+  const effective = modelId ?? settingsStore.globalDefaults.modelId;
+  return effective ? formatShortModelName(effective) : 'No model';
 }
 
 function openChat(id: string): void {
@@ -67,7 +67,7 @@ function openChat(id: string): void {
 </script>
 
 <template>
-  <div class="mx-auto flex min-h-dvh max-w-97.5 flex-col border-x border-outline-variant/20 bg-surface pb-24">
+  <div class="mx-auto flex min-h-dvh max-w-97.5 flex-col border-x border-outline-variant/20 pb-24">
     <header class="sticky top-0 z-40 flex items-center justify-between bg-surface/85 px-5 pb-3 pt-9 backdrop-blur-md">
       <div class="flex items-center gap-2">
         <svg viewBox="0 0 24 24" class="size-6 fill-none stroke-primary stroke-2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" /></svg>
@@ -198,7 +198,7 @@ function openChat(id: string): void {
               </span>
               <span v-if="chat.status === 'archived'" class="text-[10px] text-outline/60">• Archived</span>
             </div>
-            <p class="line-clamp-1 font-serif text-[13px] italic tracking-normal text-secondary">
+            <p class="preview-fade-edge overflow-hidden whitespace-nowrap font-serif text-[13px] italic tracking-normal text-secondary">
               {{ chat.lastMessagePreview ?? 'The page awaits its first word.' }}
             </p>
           </div>

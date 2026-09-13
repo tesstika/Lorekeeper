@@ -109,7 +109,7 @@ const heading = computed(() => (isNew.value ? 'New Persona' : 'Edit Persona'));
 </script>
 
 <template>
-  <div class="mx-auto flex min-h-dvh max-w-105 flex-col border-x border-outline-variant/20 bg-surface shadow-2xl">
+  <div class="mx-auto flex min-h-dvh max-w-105 flex-col border-x border-outline-variant/20 shadow-2xl">
     <header class="sticky top-0 z-40 flex h-16 items-center justify-between bg-surface/90 px-5 backdrop-blur-md">
       <button
         type="button"

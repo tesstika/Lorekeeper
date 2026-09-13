@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { defineComponent, vaporInteropPlugin } from 'vue';
 import ComposerCard from '../components/settings/ComposerCard.vue';
+import DisplayCard from '../components/settings/DisplayCard.vue';
 import PresetCard from '../components/settings/PresetCard.vue';
 import SamplingCard from '../components/settings/SamplingCard.vue';
 import NumberStepper from '../components/ui/NumberStepper.vue';
@@ -42,6 +43,7 @@ const settingsFixture: SettingsResponse = {
     modelId: 'moondream:latest',
     prompt: 'Describe this image in rich detail.',
   },
+  display: { backgroundEffect: 'stars' },
 };
 
 const providersFixture: ProviderInfo[] = [
@@ -114,6 +116,7 @@ const apiState = vi.hoisted(() => {
       modelId: 'moondream:latest',
       prompt: 'Describe this image in rich detail.',
     },
+    display: { backgroundEffect: 'stars' },
   };
   const providers: ProviderInfo[] = [
     {
@@ -243,6 +246,9 @@ function host(
   return defineComponent({ components, template });
 }
 
+/** Track the wrapper of tests that mount full cards so afterEach can unmount. */
+let wrapper: ReturnType<typeof mount> | null = null;
+
 beforeEach(() => {
   setActivePinia(createPinia());
   apiState.settings = apiState.clone(JSON.parse(JSON.stringify(settingsFixture)));
@@ -251,6 +257,8 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  wrapper?.unmount();
+  wrapper = null;
   vi.clearAllMocks();
 });
 
@@ -438,5 +446,36 @@ describe('PresetCard', () => {
     const created = apiState.presets.find((p) => p.name === 'Uncensored Creative');
     expect(created?.temperature).toBeCloseTo(1.15);
     expect(store.globalDefaults.presetId).toBe(created?.id ?? null);
+  });
+});
+
+describe('DisplayCard', () => {
+  it('renders the four effect pills with the persisted one active', async () => {
+    const Host = host('<div><DisplayCard /></div>', { DisplayCard });
+    wrapper = mount(Host, { global: { plugins: [vaporInteropPlugin] } });
+    await flushPromises();
+
+    const pills = wrapper.findAll('button[aria-pressed]');
+    expect(pills.map((pill) => pill.text())).toEqual(['Embers', 'Aurora', 'Stars', 'Off']);
+    const active = pills.find((pill) => pill.attributes('aria-pressed') === 'true');
+    expect(active?.text()).toBe('Stars');
+  });
+
+  it('persists a choice instantly through the settings API', async () => {
+    const store = useSettingsStore();
+    await store.load();
+    const Host = host('<div><DisplayCard /></div>', { DisplayCard });
+    wrapper = mount(Host, { global: { plugins: [vaporInteropPlugin] } });
+    await flushPromises();
+
+    const aurora = wrapper.findAll('button[aria-pressed]').find((pill) => pill.text() === 'Aurora');
+    expect(aurora).toBeDefined();
+    await aurora?.trigger('click');
+    await flushPromises();
+
+    expect(apiState.settings.display).toEqual({ backgroundEffect: 'aurora' });
+    expect(store.display.backgroundEffect).toBe('aurora');
+    // The active pill flipped and the previous one is no longer pressed.
+    expect(aurora?.attributes('aria-pressed')).toBe('true');
   });
 });

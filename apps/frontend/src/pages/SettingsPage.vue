@@ -2,6 +2,7 @@
 import { APP_VERSION } from '@lorekeeper/shared';
 import { onMounted, ref } from 'vue';
 import ComposerCard from '@/components/settings/ComposerCard.vue';
+import DisplayCard from '@/components/settings/DisplayCard.vue';
 import EngineCard from '@/components/settings/EngineCard.vue';
 import ImageCaptioningCard from '@/components/settings/ImageCaptioningCard.vue';
 import PresetCard from '@/components/settings/PresetCard.vue';
@@ -39,7 +40,7 @@ function resetToDefaults(): void {
 </script>
 
 <template>
-  <div class="mx-auto min-h-dvh max-w-97.5 border-x border-outline-variant/20 bg-surface pb-24">
+  <div class="mx-auto min-h-dvh max-w-97.5 border-x border-outline-variant/20 pb-24">
     <header class="sticky top-0 z-40 flex items-center justify-between border-b border-outline-variant/30 bg-surface/85 px-5 pb-3 pt-9 backdrop-blur-md">
       <div class="flex items-center gap-2">
         <IconSliders class="size-5 text-primary" />
@@ -90,6 +91,7 @@ function resetToDefaults(): void {
         <EngineCard />
         <SamplingCard />
         <ComposerCard />
+        <DisplayCard />
         <ImageCaptioningCard />
         <PresetCard />
         <PromptTemplateCard />

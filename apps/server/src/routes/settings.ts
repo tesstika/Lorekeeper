@@ -5,6 +5,7 @@ import {
 } from '@lorekeeper/shared';
 import {
   getComposer,
+  getDisplay,
   getGlobalDefaults,
   getImageCaptioning,
   getPromptTemplate,
@@ -18,6 +19,7 @@ export function readSettings(db: AppInstance['db']): SettingsResponse {
     promptTemplate: getPromptTemplate(db),
     composer: getComposer(db),
     imageCaptioning: getImageCaptioning(db),
+    display: getDisplay(db),
   };
 }
 
@@ -51,6 +53,10 @@ export async function registerSettingsRoutes(app: AppInstance): Promise<void> {
       if (patch.imageCaptioning) {
         const next = { ...getImageCaptioning(app.db), ...patch.imageCaptioning };
         setSettingRaw(app.db, 'imageCaptioning', next);
+      }
+      if (patch.display) {
+        const next = { ...getDisplay(app.db), ...patch.display };
+        setSettingRaw(app.db, 'display', next);
       }
       return readSettings(app.db);
     },

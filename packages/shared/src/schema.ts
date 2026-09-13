@@ -150,6 +150,21 @@ export const imageCaptioningSchema = z.object({
 export type ImageCaptioningSettings = z.output<typeof imageCaptioningSchema>;
 export type ImageCaptioningPatchInput = z.input<typeof imageCaptioningSchema>;
 
+/**
+ * Display & atmosphere settings. `backgroundEffect` picks the animated
+ * background rendered as a fixed underlay behind the router view
+ * (BackgroundAtmosphere.vue): drifting golden embers, breathing aurora
+ * blobs, a twinkling star field, or nothing at all. 'stars' is the default.
+ */
+export const backgroundEffectSchema = z.enum(['embers', 'aurora', 'stars', 'off']);
+export type BackgroundEffect = z.output<typeof backgroundEffectSchema>;
+
+export const displaySchema = z.object({
+  backgroundEffect: backgroundEffectSchema.default('stars'),
+});
+export type DisplaySettings = z.output<typeof displaySchema>;
+export type DisplayPatch = z.input<typeof displaySchema>;
+
 // ---------------------------------------------------------------------------
 // PATCH schemas — deliberately built WITHOUT `.default()`: the type provider
 // validates request bodies through the z.output direction, which injects every
@@ -198,6 +213,12 @@ export const imageCaptioningPatchSchema = z.object({
 });
 export type ImageCaptioningPatchValue = z.output<typeof imageCaptioningPatchSchema>;
 
+/** Defaults-free PATCH for the display section (M1 §4.2 discipline). */
+export const displayPatchSchema = z.object({
+  backgroundEffect: backgroundEffectSchema.optional(),
+});
+export type DisplayPatchValue = z.output<typeof displayPatchSchema>;
+
 /**
  * Response of GET/PATCH /api/settings. `apiKeys` is deliberately NOT part of
  * this response — key envelopes are exposed only through the provider
@@ -208,6 +229,7 @@ export const settingsResponseSchema = z.object({
   promptTemplate: promptTemplateSchema,
   composer: composerSchema,
   imageCaptioning: imageCaptioningSchema,
+  display: displaySchema,
 });
 export type SettingsResponse = z.output<typeof settingsResponseSchema>;
 
@@ -216,6 +238,7 @@ export const settingsPatchSchema = z.object({
   promptTemplate: promptTemplatePatchSchema.optional(),
   composer: composerPatchSchema.optional(),
   imageCaptioning: imageCaptioningPatchSchema.optional(),
+  display: displayPatchSchema.optional(),
 });
 export type SettingsPatch = z.output<typeof settingsPatchSchema>;
 

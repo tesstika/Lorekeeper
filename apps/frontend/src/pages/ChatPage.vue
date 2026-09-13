@@ -17,6 +17,7 @@ import { useSettingsStore } from '@/stores/settings';
 import { useStreamingStore } from '@/stores/streaming';
 import { useUiStore } from '@/stores/ui';
 import { describeApiError } from '@/utils/errors';
+import { formatShortModelName } from '@/utils/model-format';
 
 const route = useRoute();
 const router = useRouter();
@@ -173,7 +174,7 @@ const downloadTag = ref<string | null>(null);
 const retryAfterDownload = ref<{ chatId: string; targetMessageId: string | null } | null>(null);
 
 function shortTagLabel(tag: string): string {
-  return tag.includes('/') ? (tag.split('/').pop() ?? tag) : tag;
+  return formatShortModelName(tag);
 }
 
 watch(
@@ -209,7 +210,7 @@ async function onDownloadSuccess(): Promise<void> {
 </script>
 
 <template>
-  <div class="mx-auto flex h-dvh max-w-97.5 flex-col border-x border-outline-variant/20 bg-surface">
+  <div class="mx-auto flex h-dvh max-w-97.5 flex-col border-x border-outline-variant/20">
     <header class="z-40 border-b border-outline-variant/30 px-4 pb-2 pt-9">
       <nav class="flex items-center justify-between">
         <button

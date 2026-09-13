@@ -7,6 +7,7 @@ import { useChatsStore } from '@/stores/chats';
 import { useSettingsStore } from '@/stores/settings';
 import { useUiStore } from '@/stores/ui';
 import { describeApiError } from '@/utils/errors';
+import { formatShortModelName } from '@/utils/model-format';
 
 const props = defineProps<{ open: boolean }>();
 const emit = defineEmits<{ close: [] }>();
@@ -83,11 +84,6 @@ async function ensureCatalog(): Promise<void> {
   }
 }
 
-function shortModel(modelId: string): string {
-  const short = modelId.includes('/') ? (modelId.split('/').pop() ?? modelId) : modelId;
-  return short.replace(/[-_]/g, ' ');
-}
-
 const providerModels = computed(() => {
   const detail = chatsStore.activeChat;
   const providerId = detail?.chat.providerId ?? settingsStore.globalDefaults.providerId;
@@ -96,7 +92,7 @@ const providerModels = computed(() => {
 
 const defaultModelLabel = computed(() => {
   const modelId = settingsStore.globalDefaults.modelId;
-  return modelId ? shortModel(modelId) : 'no model set';
+  return modelId ? formatShortModelName(modelId) : 'no model set';
 });
 
 const defaultPresetLabel = computed(() => {

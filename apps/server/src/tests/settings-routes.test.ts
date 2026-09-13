@@ -450,6 +450,58 @@ describe('image captioning settings section', () => {
   });
 });
 
+describe('display settings section', () => {
+  it('GET returns the stars background effect as the default', async () => {
+    const response = await app.inject({ method: 'GET', url: '/api/settings' });
+    expect(response.statusCode).toBe(200);
+    expect(response.json().display).toEqual({ backgroundEffect: 'stars' });
+  });
+
+  it('PATCH merges partial display values and keeps untouched keys', async () => {
+    const patched = await app.inject({
+      method: 'PATCH',
+      url: '/api/settings',
+      payload: { display: { backgroundEffect: 'embers' } },
+    });
+    expect(patched.statusCode).toBe(200);
+    expect(patched.json().display).toEqual({ backgroundEffect: 'embers' });
+
+    // Untouched-keys regression (D-Z1): a composer PATCH must not disturb the
+    // stored display row, and vice versa.
+    const composerPatch = await app.inject({
+      method: 'PATCH',
+      url: '/api/settings',
+      payload: { composer: { autoScroll: false } },
+    });
+    expect(composerPatch.json().display).toEqual({ backgroundEffect: 'embers' });
+    expect(composerPatch.json().composer).toMatchObject({ autoScroll: false });
+
+    // Persisted under the display kv row.
+    const rows = app.sqlite
+      .query<{ value: string }, []>("SELECT value FROM settings WHERE key = 'display'")
+      .all();
+    expect(JSON.parse(rows[0]?.value ?? '{}')).toEqual({ backgroundEffect: 'embers' });
+
+    // A partial display PATCH itself never injects defaults (defaults-free schema).
+    const followUp = await app.inject({
+      method: 'PATCH',
+      url: '/api/settings',
+      payload: { display: { backgroundEffect: 'aurora' } },
+    });
+    expect(followUp.json().display).toEqual({ backgroundEffect: 'aurora' });
+  });
+
+  it('rejects unknown background effects with a 400', async () => {
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/api/settings',
+      payload: { display: { backgroundEffect: 'fireworks' } },
+    });
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({ code: 'validation_error' });
+  });
+});
+
 describe('data hygiene', () => {
   it('keeps the master key outside the data dir', () => {
     expect(existsSync(secretKeyPath)).toBe(true);

@@ -3,6 +3,8 @@ import {
   apiKeysSchema,
   type ComposerSettings,
   composerSchema,
+  type DisplaySettings,
+  displaySchema,
   type GlobalDefaults,
   globalDefaultsSchema,
   type ImageCaptioningSettings,
@@ -127,6 +129,17 @@ export function getImageCaptioning(db: LorekeeperDb): ImageCaptioningSettings {
     return { ...settings, modelId: OLLAMA_CAPTIONER_MODEL };
   }
   return settings;
+}
+
+// -- display ----------------------------------------------------------------
+
+export function getDisplay(db: LorekeeperDb): DisplaySettings {
+  return getSettingWith(
+    db,
+    'display',
+    (raw) => displaySchema.parse(raw),
+    () => displaySchema.parse({}),
+  );
 }
 
 // -- model cache (`modelCache:<providerId>`) ---------------------------------

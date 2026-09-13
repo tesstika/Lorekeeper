@@ -154,7 +154,7 @@ function toggleSearch(): void {
 </script>
 
 <template>
-  <div class="mx-auto flex min-h-dvh max-w-97.5 flex-col border-x border-outline-variant/20 bg-surface pb-28">
+  <div class="mx-auto flex min-h-dvh max-w-97.5 flex-col border-x border-outline-variant/20 pb-28">
     <header class="sticky top-0 z-40 flex items-center justify-between bg-surface/85 px-5 pb-3 pt-9 backdrop-blur-md">
       <div class="flex items-center gap-2">
         <IconBook class="size-6 text-primary" />

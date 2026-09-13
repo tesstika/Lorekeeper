@@ -1,6 +1,9 @@
 import {
   type ComposerPatch,
   composerSchema,
+  type DisplayPatch,
+  type DisplayPatchValue,
+  displaySchema,
   type GlobalDefaultsPatch,
   globalDefaultsSchema,
   type ImageCaptioningPatchValue,
@@ -58,6 +61,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const imageCaptioning = computed(
     () => settings.value?.imageCaptioning ?? imageCaptioningSchema.parse({}),
   );
+  const display = computed(() => settings.value?.display ?? displaySchema.parse({}));
 
   const activeProviderId = computed(() => globalDefaults.value.providerId);
   const activeModelId = computed(() => globalDefaults.value.modelId);
@@ -127,12 +131,13 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   async function patchSettings(
-    section: 'globalDefaults' | 'promptTemplate' | 'composer' | 'imageCaptioning',
+    section: 'globalDefaults' | 'promptTemplate' | 'composer' | 'imageCaptioning' | 'display',
     patch:
       | Partial<GlobalDefaultsPatch>
       | PromptTemplatePatch
       | ComposerPatch
-      | ImageCaptioningPatchValue,
+      | ImageCaptioningPatchValue
+      | DisplayPatch,
   ): Promise<void> {
     try {
       settings.value = await api.patchSettings({ [section]: patch } as SettingsPatch);
@@ -158,12 +163,17 @@ export const useSettingsStore = defineStore('settings', () => {
     return patchSettings('imageCaptioning', patch);
   }
 
+  function updateDisplay(patch: DisplayPatchValue): Promise<void> {
+    return patchSettings('display', patch);
+  }
+
   /** Resets the editable sections to their schema defaults (Settings → Reset). */
   async function resetToDefaults(): Promise<void> {
     await patchSettings('globalDefaults', globalDefaultsSchema.parse({}));
     await patchSettings('promptTemplate', promptTemplateSchema.parse({}));
     await patchSettings('composer', composerSchema.parse({}));
     await patchSettings('imageCaptioning', imageCaptioningSchema.parse({}));
+    await patchSettings('display', displaySchema.parse({}));
     syncWorkingPreset();
     ui.notify('Settings restored to defaults', 'success');
   }
@@ -279,6 +289,7 @@ export const useSettingsStore = defineStore('settings', () => {
     composer,
     promptTemplate,
     imageCaptioning,
+    display,
     activeProviderId,
     activeModelId,
     activePresetId,
@@ -293,6 +304,7 @@ export const useSettingsStore = defineStore('settings', () => {
     updatePromptTemplate,
     updateComposer,
     updateImageCaptioning,
+    updateDisplay,
     resetToDefaults,
     refreshProviders,
     saveProviderKey,
