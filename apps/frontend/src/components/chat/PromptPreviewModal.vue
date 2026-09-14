@@ -218,6 +218,25 @@ async function copyText(text: string, label: string): Promise<void> {
             <pre v-if="preview.trailing" class="lk-preview-block mt-1.5 max-h-40">{{ preview.trailing }}</pre>
             <p v-else class="mt-1.5 text-[12px] italic text-outline">Empty — no post-history instructions or character jailbreak.</p>
           </section>
+
+          <!-- Stepped thinking plan -->
+          <section aria-label="Stepped thinking plan">
+            <div class="flex items-center justify-between">
+              <h3 class="text-[11px] font-semibold uppercase tracking-wider text-secondary">Stepped thinking plan</h3>
+              <button
+                v-if="preview.thought"
+                type="button"
+                class="rounded px-2 py-0.5 text-[10.5px] uppercase tracking-wide text-secondary transition-colors hover:bg-surface-container-high hover:text-primary"
+                @click="copyText(preview.thought, 'Stepped thinking plan')"
+              >Copy</button>
+            </div>
+            <pre v-if="preview.thought" class="lk-preview-block mt-1.5 max-h-56">&lt;character_internal_guidance&gt;
+{{ preview.thought }}
+&lt;/character_internal_guidance&gt;</pre>
+            <p v-else class="mt-1.5 text-[12px] italic text-outline">
+              No stored thinking plan — the last reply ran without stepped thinking.
+            </p>
+          </section>
         </div>
 
         <!-- Footer actions -->

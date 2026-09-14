@@ -16,7 +16,10 @@ import type { SseWriter } from './sseWriter';
 // established import surface.
 export { isGenerating, resolveGenerationConfig, SessionConfigError } from './config';
 
+import type { AssembledPrompt } from '../prompt/assemble';
 import { getChatRow } from '../services/chatsRepo';
+import { saveThought } from '../services/messagesRepo';
+import { getSteppedThinking } from '../services/settingsRepo';
 import {
   activeGenerations,
   type ResolvedGenerationConfig,
@@ -24,12 +27,14 @@ import {
   resolveGenerationConfig,
   SessionConfigError,
 } from './config';
-import { loadPromptInputs } from './promptInputs';
+import { historyUpTo, loadPromptInputs } from './promptInputs';
+import { isNativeReasoningModel, runThinkingPass } from './thinking';
 
 // ---------------------------------------------------------------------------
 // Generation session (plan §5, §6.7, §6.8, §7.2):
-//   single-flight per chat → assemble prompt → persist pending variant →
-//   SSE meta/delta/done|error with heartbeat + idle watchdog → persist final.
+//   single-flight per chat → persist pending variant → meta → [status thinking
+//   → Pass 1 reasoning → status generating] → assemble prompt (guidance block)
+//   → SSE deltas with heartbeat + idle watchdog → persist final.
 // ---------------------------------------------------------------------------
 
 export const HEARTBEAT_MS = 15_000;
@@ -181,28 +186,10 @@ export async function runGenerationSession(options: SessionOptions): Promise<Ses
     );
   }
 
-  let assembled: ReturnType<typeof loadPromptInputs>['assembled'];
-  try {
-    ({ assembled } = loadPromptInputs(db, options.dataDir, chat, {
-      ...(target ? { cutoffSeq: target.seq } : {}),
-      ...(options.captionWarnings ? { captionWarnings: options.captionWarnings } : {}),
-    }));
-  } catch (error) {
-    if (error instanceof SessionConfigError) {
-      return failFast(
-        { code: error.code, message: error.message },
-        error.code !== 'not_found' && error.code !== 'invalid_target',
-      );
-    }
-    throw error;
-  }
-  assembled.request.model = config.modelId;
-  if (config.providerId === 'openrouter') assembled.request.includeUsage = true;
-  if (config.providerId === 'ollama') {
-    // Ollama defaults num_ctx to 2048 and would truncate roleplay prompts —
-    // lift it to the effective context budget (feature spec §3.A).
-    assembled.request.numCtx = resolveContextBudgetTokens(db, chat);
-  }
+  // Stepped thinking applies only when enabled AND the primary model does not
+  // reason natively (no double-thinking — spec §B.1).
+  const stepped = getSteppedThinking(db);
+  const thinkingApplies = stepped.enabled && !isNativeReasoningModel(config.modelId);
 
   // Pending assistant row: created active; regenerate joins the target group.
   let variantRow: MessageRow;
@@ -243,10 +230,18 @@ export async function runGenerationSession(options: SessionOptions): Promise<Ses
   });
 
   let buffer = '';
+  let thoughtBuffer: string | null = null;
   let lastDataAt = Date.now();
   let idleFired = false;
+  let thinkingActive = false;
   const heartbeat = setInterval(() => writer.writeComment('ping'), heartbeatMs);
   const idleWatchdog = setInterval(() => {
+    // Pass 1 legitimately produces no provider bytes for minutes — hold the
+    // watchdog baseline while it runs (heartbeats keep the transport alive).
+    if (thinkingActive) {
+      lastDataAt = Date.now();
+      return;
+    }
     if (Date.now() - lastDataAt > idleTimeoutMs) {
       idleFired = true;
       controller.abort();
@@ -255,6 +250,96 @@ export async function runGenerationSession(options: SessionOptions): Promise<Ses
 
   let outcome: SessionOutcome;
   try {
+    let assembled: AssembledPrompt;
+    try {
+      // Pass 1 — stepped thinking (feature spec §B): status event first, then
+      // the reasoning call. The idle watchdog is held while it runs; a client
+      // Stop aborts the thinking fetch and finalizes as `aborted`.
+      if (thinkingApplies) {
+        thinkingActive = true;
+        writer.writeEvent({ type: 'status', stage: 'thinking', message: 'Thinking...' });
+        const history = historyUpTo(db, chatId, target ? target.seq : Number.MAX_SAFE_INTEGER);
+        const pass = await runThinkingPass({
+          db,
+          chat,
+          config,
+          history,
+          signal: controller.signal,
+        });
+        thinkingActive = false;
+        lastDataAt = Date.now();
+        if (clientClosed || controller.signal.aborted) {
+          finalizeVariant(db, variantRow.id, { text: '', finishReason: 'aborted' });
+          outcome = {
+            status: 'aborted',
+            messageId: variantRow.id,
+            finishReason: 'aborted',
+            error: null,
+          };
+          return outcome;
+        }
+        if (pass.thought) {
+          thoughtBuffer = pass.thought;
+          saveThought(db, variantRow.id, pass.thought);
+        }
+        const warnings = [...(options.captionWarnings ?? [])];
+        if (pass.warning) warnings.push(pass.warning);
+        ({ assembled } = loadPromptInputs(db, options.dataDir, chat, {
+          ...(target ? { cutoffSeq: target.seq } : {}),
+          ...(warnings.length > 0 ? { captionWarnings: warnings } : {}),
+          ...(thoughtBuffer ? { thoughtText: thoughtBuffer } : {}),
+        }));
+        writer.writeEvent({
+          type: 'status',
+          stage: 'generating',
+          message: 'Generating response...',
+        });
+      } else {
+        ({ assembled } = loadPromptInputs(db, options.dataDir, chat, {
+          ...(target ? { cutoffSeq: target.seq } : {}),
+          ...(options.captionWarnings ? { captionWarnings: options.captionWarnings } : {}),
+        }));
+      }
+    } catch (error) {
+      if (error instanceof SessionConfigError) {
+        // The pending variant already exists — finalize it instead of
+        // creating a second row (failFast's create path is pre-`add()` only).
+        finalizeVariant(db, variantRow.id, {
+          text: '',
+          finishReason: 'error',
+          isError: true,
+          error: {
+            code: error.code,
+            message: error.message,
+            providerId: config.providerId,
+            modelId: config.modelId,
+          },
+        });
+        const errorEvent = {
+          code: error.code,
+          message: error.message,
+          providerId: config.providerId,
+          modelId: config.modelId,
+        };
+        writer.writeEvent({ type: 'error', ...errorEvent });
+        outcome = {
+          status: 'error',
+          messageId: variantRow.id,
+          finishReason: 'error',
+          error: errorEvent,
+        };
+        return outcome;
+      }
+      throw error;
+    }
+    assembled.request.model = config.modelId;
+    if (config.providerId === 'openrouter') assembled.request.includeUsage = true;
+    if (config.providerId === 'ollama') {
+      // Ollama defaults num_ctx to 2048 and would truncate roleplay prompts —
+      // lift it to the effective context budget (feature spec §3.A).
+      assembled.request.numCtx = resolveContextBudgetTokens(db, chat);
+    }
+
     const provider = getProvider(config.providerId);
     // Ollama is keyless — the provider ignores the credential slot.
     const apiKey =

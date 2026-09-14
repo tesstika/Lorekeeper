@@ -100,6 +100,8 @@ export const messages = sqliteTable(
     isError: integer({ mode: 'boolean' }).notNull().default(false),
     error: text({ mode: 'json' }).$type<ChatError | null>(),
     usage: text({ mode: 'json' }).$type<TokenUsage | null>(),
+    /** Stepped-thinking Pass 1 plan (reasoning helper); null when not run. */
+    thought: text(),
     createdAt: text().notNull(),
   },
   (t) => [index('idx_messages_chat_seq').on(t.chatId, t.seq)],

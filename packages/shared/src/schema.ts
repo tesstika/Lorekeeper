@@ -150,6 +150,64 @@ export const imageCaptioningSchema = z.object({
 export type ImageCaptioningSettings = z.output<typeof imageCaptioningSchema>;
 export type ImageCaptioningPatchInput = z.input<typeof imageCaptioningSchema>;
 
+// ---------------------------------------------------------------------------
+// Stepped thinking (reasoning helper): a curated Ollama reasoning model runs
+// Pass 1 (character psychology / reaction plan) before the primary model's
+// narrative Pass 2. The plan is stored on the assistant message and injected
+// as a <character_internal_guidance> system block for the current turn only.
+// ---------------------------------------------------------------------------
+
+export const OLLAMA_THINKING_MODELS = [
+  {
+    tag: 'hf.co/Abiray/Huihui-Qwythos-9B-Claude-Mythos-5-1M-abliterated-GGUF:Q8_0',
+    label: 'Qwythos 9B Claude-Mythos (Q8_0)',
+    huggingFaceUrl:
+      'https://huggingface.co/Abiray/Huihui-Qwythos-9B-Claude-Mythos-5-1M-abliterated-GGUF',
+  },
+  {
+    tag: 'hf.co/Aydge/Huihui-Qwen3.8-27B-abliterated-GGUF:Q4_K_M',
+    label: 'Qwen3.8 27B Abliterated (Q4_K_M)',
+    huggingFaceUrl: 'https://huggingface.co/Aydge/Huihui-Qwen3.8-27B-abliterated-GGUF',
+  },
+  {
+    tag: 'hf.co/DevQuasar-7/huihui-ai.DeepSeek-R1-Distill-Qwen-14B-abliterated-v2-GGUF:Q4_K_M',
+    label: 'DeepSeek R1 Distill Qwen-14B (Q4_K_M)',
+    huggingFaceUrl:
+      'https://huggingface.co/DevQuasar-7/huihui-ai.DeepSeek-R1-Distill-Qwen-14B-abliterated-v2-GGUF',
+  },
+] as const;
+
+/**
+ * Analyst-framed directive: the reasoning model must PLAN, never write the
+ * reply. The previous "inner mind" default let reasoning models produce
+ * full in-character replies (with fake <TOOL_CALLS>/<action> tags) that the
+ * primary model then echoed into the narrative — retired and healed on read
+ * (see settingsRepo).
+ */
+export const OLLAMA_THINKING_DIRECTIVE_RETIRED =
+  "You are the inner mind of {{char}}. Before the next reply is written, think step by step about the scene: what {{char}} wants right now, what the user's last message really means beneath its words, how {{char}} would honestly react (including doubts, instincts and contradictions), and what the reply should accomplish next. Never write the reply itself and never speak for the user — output only the analysis and the reaction plan.";
+
+export const DEFAULT_THINKING_DIRECTIVE =
+  "You are a behind-the-scenes story analyst. Before the next reply is written, plan the beat: what {{char}} wants right now, what the user's last message really means beneath its words, how {{char}} would honestly react (doubts and contradictions included), and what the beat should accomplish next.\n\nHard output rules: 3-6 short lines of plain analysis. NEVER write dialogue. NEVER use quotation marks. NEVER write actions in asterisks. NEVER write the reply itself. NEVER speak or act for the user. NEVER use XML/HTML tags of any kind. Plain sentences only.";
+
+export const steppedThinkingSchema = z.object({
+  enabled: z.boolean().default(false),
+  providerId: z.literal('ollama').default('ollama'),
+  modelId: z.string().min(1).max(200).default(OLLAMA_THINKING_MODELS[0].tag),
+  maxTokens: z.number().int().min(128).max(4096).default(1024),
+  directive: z.string().min(1).max(8_000).default(DEFAULT_THINKING_DIRECTIVE),
+});
+export type SteppedThinkingSettings = z.output<typeof steppedThinkingSchema>;
+
+export const steppedThinkingPatchSchema = z.object({
+  enabled: z.boolean().optional(),
+  providerId: z.literal('ollama').optional(),
+  modelId: z.string().min(1).max(200).optional(),
+  maxTokens: z.number().int().min(128).max(4096).optional(),
+  directive: z.string().min(1).max(8_000).optional(),
+});
+export type SteppedThinkingPatchValue = z.output<typeof steppedThinkingPatchSchema>;
+
 /**
  * Display & atmosphere settings. `backgroundEffect` picks the animated
  * background rendered as a fixed underlay behind the router view
@@ -230,6 +288,7 @@ export const settingsResponseSchema = z.object({
   composer: composerSchema,
   imageCaptioning: imageCaptioningSchema,
   display: displaySchema,
+  steppedThinking: steppedThinkingSchema,
 });
 export type SettingsResponse = z.output<typeof settingsResponseSchema>;
 
@@ -239,6 +298,7 @@ export const settingsPatchSchema = z.object({
   composer: composerPatchSchema.optional(),
   imageCaptioning: imageCaptioningPatchSchema.optional(),
   display: displayPatchSchema.optional(),
+  steppedThinking: steppedThinkingPatchSchema.optional(),
 });
 export type SettingsPatch = z.output<typeof settingsPatchSchema>;
 
@@ -801,17 +861,25 @@ export const sseErrorEventSchema = z.object({
   statusCode: z.number().optional(),
   retryAfterMs: z.number().optional(),
 });
+/** Two-pass pipeline stage updates (e.g. "Thinking..." before Pass 2). */
+export const sseStatusEventSchema = z.object({
+  type: z.literal('status'),
+  stage: z.enum(['thinking', 'generating']),
+  message: z.string(),
+});
 
 export const sseEventSchema = z.discriminatedUnion('type', [
   sseMetaEventSchema,
   sseDeltaEventSchema,
   sseDoneEventSchema,
   sseErrorEventSchema,
+  sseStatusEventSchema,
 ]);
 export type SseMetaEvent = z.output<typeof sseMetaEventSchema>;
 export type SseDeltaEvent = z.output<typeof sseDeltaEventSchema>;
 export type SseDoneEvent = z.output<typeof sseDoneEventSchema>;
 export type SseErrorEvent = z.output<typeof sseErrorEventSchema>;
+export type SseStatusEvent = z.output<typeof sseStatusEventSchema>;
 export type SseEvent = z.output<typeof sseEventSchema>;
 
 /** SSE endpoint request bodies are empty; declared for the client contract. */
@@ -852,5 +920,7 @@ export const promptPreviewResponseSchema = z.object({
   providerId: z.string().nullable(),
   modelId: z.string().nullable(),
   modelContextLength: z.number().nullable(),
+  /** Latest stored stepped-thinking plan for the chat (modal section). */
+  thought: z.string().nullable(),
 });
 export type PromptPreviewResponse = z.output<typeof promptPreviewResponseSchema>;

@@ -8,6 +8,7 @@ import {
   SessionConfigError,
 } from '../generation/session';
 import { createSseWriter } from '../generation/sseWriter';
+import { isNativeReasoningModel } from '../generation/thinking';
 import {
   fetchOllamaStatus,
   isOllamaModelPulled,
@@ -17,6 +18,7 @@ import type { ChatRow } from '../services/chatsRepo';
 import { getChatRow } from '../services/chatsRepo';
 import { KeyStore } from '../services/keyStore';
 import { getMessageRow } from '../services/messagesRepo';
+import { getSteppedThinking } from '../services/settingsRepo';
 import type { AppInstance } from '../types/app';
 import { httpError } from '../util/http';
 
@@ -55,6 +57,30 @@ async function preflightOllama(db: LorekeeperDb, chat: ChatRow): Promise<void> {
 }
 
 /**
+ * Stepped-thinking pre-flight (feature spec §B): when enabled (and the
+ * primary model does not reason natively), the reasoning model must be
+ * pulled — a missing model 409s here so the client can offer the download
+ * through the standard flow. Runs in the async pre-flight zone (D-T3).
+ */
+async function preflightSteppedThinking(db: LorekeeperDb, chat: ChatRow): Promise<void> {
+  let config: ReturnType<typeof resolveGenerationConfig>;
+  try {
+    config = resolveGenerationConfig(db, chat);
+  } catch (error) {
+    if (error instanceof SessionConfigError) return;
+    throw error;
+  }
+  const stepped = getSteppedThinking(db);
+  if (!stepped.enabled || isNativeReasoningModel(config.modelId)) return;
+  if (await isOllamaModelPulled(stepped.modelId)) return;
+  throw httpError(
+    409,
+    'model_not_downloaded',
+    `The thinking model "${stepped.modelId}" is not downloaded yet — download it in Settings → Stepped Thinking.`,
+  );
+}
+
+/**
  * SSE generation endpoints (plan §7.2). Both stream `text/event-stream` over a
  * hijacked reply. Pre-flight failures (409 single-flight, 404 chat) are thrown
  * BEFORE the hijack so the normal JSON error contract applies; everything
@@ -70,6 +96,7 @@ export async function registerGenerationRoutes(app: AppInstance): Promise<void> 
       throw httpError(404, 'not_found', `Chat ${chatId} does not exist`);
     }
     await preflightOllama(app.db, chat);
+    await preflightSteppedThinking(app.db, chat);
     // Vision-helper pre-pass (async safe zone — see preflightOllama/D-T3).
     const captionWarnings = await captionAttachmentsForChat(app.db, app.dataDir, chat);
     if (isGenerating(chatId)) {
@@ -102,6 +129,7 @@ export async function registerGenerationRoutes(app: AppInstance): Promise<void> 
         throw httpError(404, 'not_found', `Chat ${chatId} does not exist`);
       }
       await preflightOllama(app.db, chat);
+      await preflightSteppedThinking(app.db, chat);
       const target = getMessageRow(app.db, chatId, targetMessageId);
       const captionWarnings = await captionAttachmentsForChat(app.db, app.dataDir, chat, {
         ...(target ? { cutoffSeq: target.seq } : {}),

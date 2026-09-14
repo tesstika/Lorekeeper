@@ -9,6 +9,7 @@ import {
   getGlobalDefaults,
   getImageCaptioning,
   getPromptTemplate,
+  getSteppedThinking,
   setSettingRaw,
 } from '../services/settingsRepo';
 import type { AppInstance } from '../types/app';
@@ -20,6 +21,7 @@ export function readSettings(db: AppInstance['db']): SettingsResponse {
     composer: getComposer(db),
     imageCaptioning: getImageCaptioning(db),
     display: getDisplay(db),
+    steppedThinking: getSteppedThinking(db),
   };
 }
 
@@ -57,6 +59,10 @@ export async function registerSettingsRoutes(app: AppInstance): Promise<void> {
       if (patch.display) {
         const next = { ...getDisplay(app.db), ...patch.display };
         setSettingRaw(app.db, 'display', next);
+      }
+      if (patch.steppedThinking) {
+        const next = { ...getSteppedThinking(app.db), ...patch.steppedThinking };
+        setSettingRaw(app.db, 'steppedThinking', next);
       }
       return readSettings(app.db);
     },

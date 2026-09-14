@@ -3,6 +3,7 @@ import {
   apiKeysSchema,
   type ComposerSettings,
   composerSchema,
+  DEFAULT_THINKING_DIRECTIVE,
   type DisplaySettings,
   displaySchema,
   type GlobalDefaults,
@@ -14,9 +15,12 @@ import {
   modelCacheSchema,
   OLLAMA_CAPTIONER_MODEL,
   OLLAMA_CAPTIONER_MODEL_RETIRED,
+  OLLAMA_THINKING_DIRECTIVE_RETIRED,
   type PromptTemplate,
   type ProviderId,
   promptTemplateSchema,
+  type SteppedThinkingSettings,
+  steppedThinkingSchema,
 } from '@lorekeeper/shared';
 import { eq } from 'drizzle-orm';
 import type { LorekeeperDb } from '../db/client';
@@ -140,6 +144,26 @@ export function getDisplay(db: LorekeeperDb): DisplaySettings {
     (raw) => displaySchema.parse(raw),
     () => displaySchema.parse({}),
   );
+}
+
+// -- stepped thinking (reasoning helper) --------------------------------------
+
+/**
+ * Reads the section, healing installs whose stored directive is the retired
+ * "inner mind" default (reasoning models treated it as an invitation to write
+ * full in-character replies — the plan must be analysis, not prose).
+ */
+export function getSteppedThinking(db: LorekeeperDb): SteppedThinkingSettings {
+  const settings = getSettingWith(
+    db,
+    'steppedThinking',
+    (raw) => steppedThinkingSchema.parse(raw),
+    () => steppedThinkingSchema.parse({}),
+  );
+  if (settings.directive === OLLAMA_THINKING_DIRECTIVE_RETIRED) {
+    return { ...settings, directive: DEFAULT_THINKING_DIRECTIVE };
+  }
+  return settings;
 }
 
 // -- model cache (`modelCache:<providerId>`) ---------------------------------

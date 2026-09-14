@@ -273,6 +273,7 @@ async function onDownloadSuccess(): Promise<void> {
           :avatar-path="message.role === 'user' ? (detail.persona?.avatarPath ?? null) : (character?.avatarPath ?? null)"
           :tone="message.role === 'user' ? 'user' : 'character'"
           :streaming-variant-id="streaming.isStreaming ? streaming.streamingVariantId : null"
+          :status-text="streaming.statusMessage"
           :caret-blink-ms="composer.caretBlinkMs"
           :just-finished-tone="message.activeVariantId === justFinished?.variantId ? justFinished.tone : null"
           :can-regenerate="true"

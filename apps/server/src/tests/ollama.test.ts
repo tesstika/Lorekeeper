@@ -2,12 +2,14 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { ChatRequest, OllamaPullProgressEvent, StreamEvent } from '@lorekeeper/shared';
+import { OLLAMA_THINKING_MODELS } from '@lorekeeper/shared';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { buildApp } from '../app';
 import {
   curatedOllamaModelInfos,
   fetchOllamaStatus,
   isOllamaModelPulled,
+  normalizeTrailingAssistants,
   OLLAMA_CURATED_MODELS,
   ollamaProvider,
   ollamaTagsMatch,
@@ -153,6 +155,31 @@ function baseRequest(): ChatRequest {
 describe('ollamaTagsMatch', () => {
   it('matches exact tags', () => {
     expect(ollamaTagsMatch('a/b:Q4_K_M', 'a/b:Q4_K_M')).toBe(true);
+  });
+
+  it('normalizeTrailingAssistants keeps one trailing assistant (Ollama engine rule)', () => {
+    const list = [
+      { role: 'system', content: 'sys' },
+      { role: 'assistant', content: 'old broken reply' },
+      { role: 'assistant', content: 'newest reply' },
+    ];
+    const normalized = normalizeTrailingAssistants(list);
+    expect(normalized).toHaveLength(2);
+    expect(normalized.at(-1)).toEqual({ role: 'assistant', content: 'newest reply' });
+    // A single trailing assistant is left untouched.
+    expect(
+      normalizeTrailingAssistants([
+        { role: 'user', content: 'hi' },
+        { role: 'assistant', content: 'x' },
+      ]),
+    ).toHaveLength(2);
+    // A user-final list is untouched.
+    expect(
+      normalizeTrailingAssistants([
+        { role: 'assistant', content: 'x' },
+        { role: 'user', content: 'hi' },
+      ]),
+    ).toHaveLength(2);
   });
 
   it('matches a curated tag without suffix against its :latest variant', () => {
@@ -604,5 +631,147 @@ describe('generation preflight for ollama', () => {
       options?: { num_ctx?: number };
     };
     expect(body.options?.num_ctx).toBe(8192);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Two-pass stepped thinking (reasoning helper)
+// ---------------------------------------------------------------------------
+
+describe('stepped thinking two-pass', () => {
+  const thinkingTag = OLLAMA_THINKING_MODELS[0].tag;
+
+  function stubTwoPassFetch(options: {
+    thinkingPulled: boolean;
+    primaryTag?: string;
+  }): ReturnType<typeof vi.fn> {
+    const primaryTag = options.primaryTag ?? curatedTag(0);
+    const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input);
+      const payload = typeof init?.body === 'string' ? JSON.parse(init.body) : {};
+      if (url.includes('/api/version')) return jsonResponse({ version: '0.34.0' });
+      if (url.includes('/api/tags')) {
+        const names = [{ name: primaryTag, size: 1 }];
+        if (options.thinkingPulled) names.push({ name: thinkingTag, size: 2 });
+        return jsonResponse({ models: names });
+      }
+      if (url.includes('/api/chat')) {
+        if (payload.model === thinkingTag) {
+          // Pass 1 runs with stream:false — a single JSON object.
+          return jsonResponse({
+            message: { role: 'assistant', content: 'PLAN: stay coy' },
+            done: true,
+            done_reason: 'stop',
+            prompt_eval_count: 9,
+            eval_count: 4,
+          });
+        }
+        // Pass 2 streams NDJSON deltas.
+        const frames = [
+          { message: { role: 'assistant', content: '"Hello."' }, done: false },
+          { done: true, done_reason: 'stop', prompt_eval_count: 12, eval_count: 3 },
+        ];
+        return new Response(`${frames.map((frame) => JSON.stringify(frame)).join('\n')}\n`, {
+          status: 200,
+          headers: { 'content-type': 'application/x-ndjson' },
+        });
+      }
+      throw new Error(`Unexpected fetch in test: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
+  }
+
+  afterEach(async () => {
+    await app.inject({
+      method: 'PATCH',
+      url: '/api/settings',
+      payload: {
+        globalDefaults: { modelId: curatedTag(0) },
+        steppedThinking: { enabled: false },
+      },
+    });
+    vi.unstubAllGlobals();
+  });
+
+  it('runs Pass 1, persists the thought, and streams Pass 2 with the guidance block', async () => {
+    await app.inject({
+      method: 'PATCH',
+      url: '/api/settings',
+      payload: { steppedThinking: { enabled: true } },
+    });
+    const fetchMock = stubTwoPassFetch({ thinkingPulled: true });
+
+    const response = await app.inject({ method: 'POST', url: `/api/chats/${chatId}/generate` });
+    expect(response.statusCode).toBe(200);
+
+    const kinds = response.payload
+      .split('\n\n')
+      .filter((frame) => frame.startsWith('data: '))
+      .map((frame) => (JSON.parse(frame.slice(6)) as { type: string }).type);
+    expect(kinds[0]).toBe('meta');
+    expect(kinds).toContain('status');
+    expect(kinds.filter((type) => type === 'status')).toHaveLength(2);
+    expect(kinds.at(-1)).toBe('done');
+
+    const frames = response.payload
+      .split('\n\n')
+      .filter((frame) => frame.startsWith('data: '))
+      .map((frame) => JSON.parse(frame.slice(6)) as Record<string, unknown>);
+    expect(frames.find((frame) => frame.type === 'status')).toMatchObject({
+      stage: 'thinking',
+      message: 'Thinking...',
+    });
+
+    // Thought persisted on the assistant variant.
+    const rows = app.sqlite
+      .query<{ thought: string }, []>('SELECT thought FROM messages WHERE thought IS NOT NULL')
+      .all();
+    expect(rows[0]?.thought).toBe('PLAN: stay coy');
+
+    // Pass 2 request carries the guidance block as its final system message.
+    const pass2 = (fetchMock.mock.calls as Array<[string, RequestInit]>).find(
+      ([url, init]) =>
+        String(url).includes('/api/chat') &&
+        typeof init?.body === 'string' &&
+        (JSON.parse(init.body) as { model?: string }).model === curatedTag(0),
+    );
+    const body = JSON.parse(String(pass2?.[1].body)) as {
+      messages?: Array<{ role: string; content: string }>;
+    };
+    const guidance = body.messages?.at(-1);
+    expect(guidance?.role).toBe('system');
+    expect(guidance?.content).toContain('<character_internal_guidance>');
+    expect(guidance?.content).toContain('PLAN: stay coy');
+    expect(guidance?.content).toContain('</character_internal_guidance>');
+  });
+
+  it('preflight 409s with the thinking tag when the reasoning model is not pulled', async () => {
+    await app.inject({
+      method: 'PATCH',
+      url: '/api/settings',
+      payload: { steppedThinking: { enabled: true } },
+    });
+    stubTwoPassFetch({ thinkingPulled: false });
+    const response = await app.inject({ method: 'POST', url: `/api/chats/${chatId}/generate` });
+    expect(response.statusCode).toBe(409);
+    expect(response.json()).toMatchObject({ code: 'model_not_downloaded' });
+    expect(String(response.json().message)).toContain('thinking model');
+  });
+
+  it('bypasses Pass 1 for natively-reasoning primary models', async () => {
+    await app.inject({
+      method: 'PATCH',
+      url: '/api/settings',
+      payload: {
+        globalDefaults: { modelId: 'openai/o1' },
+        steppedThinking: { enabled: true },
+      },
+    });
+    stubTwoPassFetch({ thinkingPulled: false, primaryTag: 'openai/o1' });
+    const response = await app.inject({ method: 'POST', url: `/api/chats/${chatId}/generate` });
+    expect(response.statusCode).toBe(200);
+    expect(response.payload).toContain('"type":"meta"');
+    expect(response.payload).not.toContain('"type":"status"');
   });
 });

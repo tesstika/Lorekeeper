@@ -7,6 +7,7 @@ import OllamaDownloadModal from '../components/ollama/OllamaDownloadModal.vue';
 import EngineCard from '../components/settings/EngineCard.vue';
 import ImageCaptioningCard from '../components/settings/ImageCaptioningCard.vue';
 import ProviderKeysCard from '../components/settings/ProviderKeysCard.vue';
+import SteppedThinkingCard from '../components/settings/SteppedThinkingCard.vue';
 import { type OllamaPullState, useOllamaStore } from '../stores/ollama';
 import { useSettingsStore } from '../stores/settings';
 
@@ -164,6 +165,13 @@ beforeEach(() => {
     providerId: 'ollama',
     modelId: 'moondream:latest',
     prompt: 'Describe this image in rich detail.',
+  };
+  apiState.settings.steppedThinking = {
+    enabled: false,
+    providerId: 'ollama',
+    modelId: 'hf.co/Abiray/Huihui-Qwythos-9B-Claude-Mythos-5-1M-abliterated-GGUF:Q8_0',
+    maxTokens: 1024,
+    directive: 'Think step by step about the scene.',
   };
   (apiState.settings.globalDefaults as { providerId: string }).providerId = 'ollama';
   apiState.providerCatalog = catalogModels.map((model) => ({ ...model }));
@@ -355,6 +363,61 @@ describe('ImageCaptioningCard', () => {
 
     expect(apiState.pulledTags).toEqual(['moondream:latest']);
     expect(wrapper.text()).toContain('Downloaded');
+  });
+});
+
+describe('SteppedThinkingCard', () => {
+  const QWEN = 'hf.co/Aydge/Huihui-Qwen3.8-27B-abliterated-GGUF:Q4_K_M';
+
+  it('renders the toggle, curated models with download states, and the stepper', async () => {
+    const store = useSettingsStore();
+    await store.load();
+    const Host = host('<div><SteppedThinkingCard /></div>', { SteppedThinkingCard });
+    const wrapper = mount(Host, { global: { plugins: [vaporInteropPlugin] } });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('Stepped Thinking');
+    expect(wrapper.text()).toContain('Qwythos 9B Claude-Mythos (Q8_0)');
+    expect(wrapper.text()).toContain('Qwen3.8 27B Abliterated (Q4_K_M)');
+    expect(wrapper.text()).toContain('DeepSeek R1 Distill Qwen-14B (Q4_K_M)');
+    expect(wrapper.text()).toContain('Not downloaded');
+    expect(wrapper.find('button[role="switch"]').attributes('aria-checked')).toBe('false');
+    expect(wrapper.text()).toContain('1,024');
+  });
+
+  it('toggling and model selection persist through PATCH', async () => {
+    const store = useSettingsStore();
+    await store.load();
+    const Host = host('<div><SteppedThinkingCard /></div>', { SteppedThinkingCard });
+    const wrapper = mount(Host, { global: { plugins: [vaporInteropPlugin] } });
+    await flushPromises();
+
+    await wrapper.find('button[role="switch"]').trigger('click');
+    await flushPromises();
+    expect((apiState.settings.steppedThinking as { enabled: boolean }).enabled).toBe(true);
+    expect(wrapper.find('button[role="switch"]').attributes('aria-checked')).toBe('true');
+
+    // Select the second curated model via its pill.
+    const qwenPill = wrapper.findAll('button').find((b) => b.text().includes(QWEN.slice(0, 20)));
+    await qwenPill?.trigger('click');
+    await flushPromises();
+    expect((apiState.settings.steppedThinking as { modelId: string }).modelId).toBe(QWEN);
+  });
+
+  it('streams a pull through the shared pipeline for a curated thinking model', async () => {
+    const store = useSettingsStore();
+    await store.load();
+    const Host = host('<div><SteppedThinkingCard /></div>', { SteppedThinkingCard });
+    const wrapper = mount(Host, { global: { plugins: [vaporInteropPlugin] } });
+    await flushPromises();
+
+    const qwenLabel = 'Qwen3.8 27B Abliterated (Q4_K_M)';
+    const downloadButton = wrapper.find(`button[aria-label="Download ${qwenLabel}"]`);
+    expect(downloadButton.exists()).toBe(true);
+    await downloadButton.trigger('click');
+    await flushPromises();
+
+    expect(apiState.pulledTags).toContain(QWEN);
   });
 });
 

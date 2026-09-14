@@ -44,6 +44,13 @@ const settingsFixture: SettingsResponse = {
     prompt: 'Describe this image in rich detail.',
   },
   display: { backgroundEffect: 'stars' },
+  steppedThinking: {
+    enabled: false,
+    providerId: 'ollama',
+    modelId: 'hf.co/Abiray/Huihui-Qwythos-9B-Claude-Mythos-5-1M-abliterated-GGUF:Q8_0',
+    maxTokens: 1024,
+    directive: 'Think step by step about the scene.',
+  },
 };
 
 const providersFixture: ProviderInfo[] = [
@@ -117,6 +124,13 @@ const apiState = vi.hoisted(() => {
       prompt: 'Describe this image in rich detail.',
     },
     display: { backgroundEffect: 'stars' },
+    steppedThinking: {
+      enabled: false,
+      providerId: 'ollama',
+      modelId: 'hf.co/Abiray/Huihui-Qwythos-9B-Claude-Mythos-5-1M-abliterated-GGUF:Q8_0',
+      maxTokens: 1024,
+      directive: 'Think step by step about the scene.',
+    },
   };
   const providers: ProviderInfo[] = [
     {

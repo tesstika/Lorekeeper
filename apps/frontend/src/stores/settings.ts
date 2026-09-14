@@ -1,7 +1,6 @@
 import {
   type ComposerPatch,
   composerSchema,
-  type DisplayPatch,
   type DisplayPatchValue,
   displaySchema,
   type GlobalDefaultsPatch,
@@ -19,6 +18,8 @@ import {
   promptTemplateSchema,
   type SettingsPatch,
   type SettingsResponse,
+  type SteppedThinkingPatchValue,
+  steppedThinkingSchema,
   type TestConnectionResponse,
 } from '@lorekeeper/shared';
 import { defineStore } from 'pinia';
@@ -62,6 +63,9 @@ export const useSettingsStore = defineStore('settings', () => {
     () => settings.value?.imageCaptioning ?? imageCaptioningSchema.parse({}),
   );
   const display = computed(() => settings.value?.display ?? displaySchema.parse({}));
+  const steppedThinking = computed(
+    () => settings.value?.steppedThinking ?? steppedThinkingSchema.parse({}),
+  );
 
   const activeProviderId = computed(() => globalDefaults.value.providerId);
   const activeModelId = computed(() => globalDefaults.value.modelId);
@@ -131,13 +135,20 @@ export const useSettingsStore = defineStore('settings', () => {
   }
 
   async function patchSettings(
-    section: 'globalDefaults' | 'promptTemplate' | 'composer' | 'imageCaptioning' | 'display',
+    section:
+      | 'globalDefaults'
+      | 'promptTemplate'
+      | 'composer'
+      | 'imageCaptioning'
+      | 'display'
+      | 'steppedThinking',
     patch:
       | Partial<GlobalDefaultsPatch>
       | PromptTemplatePatch
       | ComposerPatch
       | ImageCaptioningPatchValue
-      | DisplayPatch,
+      | DisplayPatchValue
+      | SteppedThinkingPatchValue,
   ): Promise<void> {
     try {
       settings.value = await api.patchSettings({ [section]: patch } as SettingsPatch);
@@ -167,6 +178,10 @@ export const useSettingsStore = defineStore('settings', () => {
     return patchSettings('display', patch);
   }
 
+  function updateSteppedThinking(patch: SteppedThinkingPatchValue): Promise<void> {
+    return patchSettings('steppedThinking', patch);
+  }
+
   /** Resets the editable sections to their schema defaults (Settings → Reset). */
   async function resetToDefaults(): Promise<void> {
     await patchSettings('globalDefaults', globalDefaultsSchema.parse({}));
@@ -174,6 +189,7 @@ export const useSettingsStore = defineStore('settings', () => {
     await patchSettings('composer', composerSchema.parse({}));
     await patchSettings('imageCaptioning', imageCaptioningSchema.parse({}));
     await patchSettings('display', displaySchema.parse({}));
+    await patchSettings('steppedThinking', steppedThinkingSchema.parse({}));
     syncWorkingPreset();
     ui.notify('Settings restored to defaults', 'success');
   }
@@ -290,6 +306,7 @@ export const useSettingsStore = defineStore('settings', () => {
     promptTemplate,
     imageCaptioning,
     display,
+    steppedThinking,
     activeProviderId,
     activeModelId,
     activePresetId,
@@ -305,6 +322,7 @@ export const useSettingsStore = defineStore('settings', () => {
     updateComposer,
     updateImageCaptioning,
     updateDisplay,
+    updateSteppedThinking,
     resetToDefaults,
     refreshProviders,
     saveProviderKey,

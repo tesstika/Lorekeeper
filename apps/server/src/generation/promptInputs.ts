@@ -27,7 +27,11 @@ export interface PromptInputs {
 }
 
 /** Active-variant history up to `cutoffSeq` (regenerate target exclusion). */
-function historyUpTo(db: LorekeeperDb, chatId: string, cutoffSeq: number): PromptHistoryMessage[] {
+export function historyUpTo(
+  db: LorekeeperDb,
+  chatId: string,
+  cutoffSeq: number,
+): PromptHistoryMessage[] {
   return listMessageRows(db, chatId)
     .filter((row) => row.isActive && row.text.trim().length > 0 && row.seq < cutoffSeq)
     .map((row) => ({ id: row.id, seq: row.seq, role: row.role, text: row.text }));
@@ -81,7 +85,12 @@ export function loadPromptInputs(
   db: LorekeeperDb,
   dataDir: string,
   chat: ChatRow,
-  options: { cutoffSeq?: number; captionWarnings?: string[] } = {},
+  options: {
+    cutoffSeq?: number;
+    captionWarnings?: string[];
+    /** Pass 1 plan (stepped thinking) injected as the guidance block. */
+    thoughtText?: string | null;
+  } = {},
 ): PromptInputs {
   const config = resolveGenerationConfig(db, chat);
 
@@ -113,6 +122,7 @@ export function loadPromptInputs(
     dataDir,
     imageCaptioningEnabled,
     ...(options.captionWarnings ? { captionWarnings: options.captionWarnings } : {}),
+    ...(options.thoughtText ? { thoughtText: options.thoughtText } : {}),
   });
   return { config, assembled };
 }

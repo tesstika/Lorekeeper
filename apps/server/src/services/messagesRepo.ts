@@ -1,5 +1,5 @@
 import type { ChatError, ProviderId } from '@lorekeeper/shared';
-import { and, asc, eq, gt, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, isNotNull, sql } from 'drizzle-orm';
 import type { LorekeeperDb } from '../db/client';
 import { attachments, chats, messages } from '../db/schema';
 
@@ -111,6 +111,7 @@ export function appendUserMessage(
       variantIndex: null,
       isActive: true,
       isGreeting: false,
+      thought: null,
       providerId: null,
       modelId: null,
       finishReason: null,
@@ -230,6 +231,7 @@ function insertVariant(tx: Tx, args: InsertVariantArgs): MessageRow {
     variantIndex: args.variantIndex,
     isActive: true,
     isGreeting: false,
+    thought: null,
     providerId: args.providerId,
     modelId: args.modelId,
     finishReason: null,
@@ -424,6 +426,23 @@ export function finalizeVariant(
     if (patch.text.trim().length > 0) touchChat(tx, row.chatId, patch.text);
     return row;
   });
+}
+
+/** Persists the Pass 1 thinking plan on the assistant row (immediately after Pass 1). */
+export function saveThought(db: LorekeeperDb, messageId: string, thought: string): void {
+  db.update(messages).set({ thought }).where(eq(messages.id, messageId)).run();
+}
+
+/** Newest non-null thinking plan in the chat (prompt-preview modal section). */
+export function latestThought(db: LorekeeperDb, chatId: string): string | null {
+  const rows = db
+    .select({ thought: messages.thought, seq: messages.seq })
+    .from(messages)
+    .where(and(eq(messages.chatId, chatId), isNotNull(messages.thought)))
+    .orderBy(desc(messages.seq))
+    .limit(1)
+    .all();
+  return rows[0]?.thought ?? null;
 }
 
 /**

@@ -9,6 +9,7 @@ import PresetCard from '@/components/settings/PresetCard.vue';
 import PromptTemplateCard from '@/components/settings/PromptTemplateCard.vue';
 import ProviderKeysCard from '@/components/settings/ProviderKeysCard.vue';
 import SamplingCard from '@/components/settings/SamplingCard.vue';
+import SteppedThinkingCard from '@/components/settings/SteppedThinkingCard.vue';
 import BottomNav from '@/components/ui/BottomNav.vue';
 import ErrorBanner from '@/components/ui/ErrorBanner.vue';
 import ToastHost from '@/components/ui/ToastHost.vue';
@@ -93,6 +94,7 @@ function resetToDefaults(): void {
         <ComposerCard />
         <DisplayCard />
         <ImageCaptioningCard />
+        <SteppedThinkingCard />
         <PresetCard />
         <PromptTemplateCard />
       </template>

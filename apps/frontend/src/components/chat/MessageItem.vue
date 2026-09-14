@@ -20,6 +20,8 @@ const props = withDefaults(
     justFinishedTone?: 'stop' | 'aborted' | 'error' | null;
     canRegenerate?: boolean;
     busy?: boolean;
+    /** Two-pass stage text ("Thinking...") while the streaming text is empty. */
+    statusText?: string | null;
   }>(),
   {
     streamingVariantId: null,
@@ -27,6 +29,7 @@ const props = withDefaults(
     justFinishedTone: null,
     canRegenerate: false,
     busy: false,
+    statusText: null,
   },
 );
 
@@ -258,12 +261,22 @@ async function requestDelete(): Promise<void> {
             >Save</button>
           </div>
         </template>
-        <MessageBody
-          v-if="!editing"
-          :text="activeVariant?.text ?? ''"
-          :streaming="isStreaming"
-          :caret-blink-ms="caretBlinkMs"
-        />
+        <template v-if="!editing">
+          <div
+            v-if="isStreaming && statusText && (activeVariant?.text ?? '').length === 0"
+            class="flex items-center gap-2 py-1 text-[13px] leading-4.5 text-secondary"
+            role="status"
+          >
+            <span class="h-1.5 w-1.5 animate-pulse rounded-full bg-primary"></span>
+            {{ statusText }}
+          </div>
+          <MessageBody
+            v-else
+            :text="activeVariant?.text ?? ''"
+            :streaming="isStreaming"
+            :caret-blink-ms="caretBlinkMs"
+          />
+        </template>
       </template>
     </div>
 

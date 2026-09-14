@@ -336,6 +336,46 @@ describe('MessageBody', () => {
 // ---------------------------------------------------------------------------
 
 describe('MessageItem', () => {
+  it('shows the two-pass status ("Thinking...") instead of a caret while Pass 1 runs', () => {
+    const Host = host(
+      '<div><MessageItem :message="message" display-name="Roza" avatar-path="null" tone="character" streaming-variant-id="v1" status-text="Thinking..." /></div>',
+      { MessageItem },
+    );
+    const wrapper = mount(Host, {
+      data: () => ({
+        message: message({
+          groupId: 'g1',
+          activeVariantId: 'v1',
+          variants: [variant('v1', { text: '' })],
+        }),
+      }),
+      global: { plugins: [vaporInteropPlugin] },
+    });
+    const status = wrapper.find('[role="status"]');
+    expect(status.exists()).toBe(true);
+    expect(status.text()).toContain('Thinking...');
+    expect(wrapper.find('.lk-caret').exists()).toBe(false);
+  });
+
+  it('renders the streaming caret (no status) when no status text is set', () => {
+    const Host = host(
+      '<div><MessageItem :message="message" display-name="Roza" avatar-path="null" tone="character" streaming-variant-id="v1" :status-text="null" /></div>',
+      { MessageItem },
+    );
+    const wrapper = mount(Host, {
+      data: () => ({
+        message: message({
+          groupId: 'g1',
+          activeVariantId: 'v1',
+          variants: [variant('v1', { text: '' })],
+        }),
+      }),
+      global: { plugins: [vaporInteropPlugin] },
+    });
+    expect(wrapper.find('[role="status"]').exists()).toBe(false);
+    expect(wrapper.find('.lk-caret').exists()).toBe(true);
+  });
+
   it('renders character messages with the Character badge and character name', () => {
     const Host = host(
       '<div><MessageItem :message="message" display-name="Lady Vivienne" avatar-path="null" tone="character" :can-regenerate="true" /></div>',
@@ -701,6 +741,28 @@ describe('streaming store cache writes', () => {
     expect(reply?.variants[0]?.text).toBe('A ghost appears.');
     expect(reply?.variants[0]?.finishReason).toBe('stop');
     expect(streaming.isStreaming).toBe(false);
+  });
+
+  it('captures two-pass status events and clears them on the first delta', async () => {
+    apiState.chatDetail = seedChat();
+    const chats = useChatsStore();
+    await chats.openChat('c1');
+    const streaming = useStreamingStore();
+    const run = streaming.start({ chatId: 'c1' });
+    await flushPromises();
+
+    sseState.handler?.({ type: 'status', stage: 'thinking', message: 'Thinking...' });
+    expect(streaming.statusMessage).toBe('Thinking...');
+    sseState.handler?.({ type: 'status', stage: 'generating', message: 'Generating response...' });
+    expect(streaming.statusMessage).toBe('Generating response...');
+    sseState.handler?.({ type: 'meta', messageId: 'v9', groupId: 'g9', seq: 2 });
+    sseState.handler?.({ type: 'delta', text: 'A ghost' });
+    expect(streaming.statusMessage).toBeNull();
+    sseState.handler?.({ type: 'done', finishReason: 'stop' });
+    sseState.release();
+    await run;
+    await flushPromises();
+    expect(streaming.statusMessage).toBeNull();
   });
 
   it('regenerate writes the new variant into the existing group', async () => {

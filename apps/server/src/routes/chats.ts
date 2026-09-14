@@ -40,6 +40,7 @@ import {
   deleteMessage,
   editMessage,
   getMessageRow,
+  latestThought,
   MessageRepoError,
 } from '../services/messagesRepo';
 import type { AppInstance } from '../types/app';
@@ -294,6 +295,7 @@ export async function registerChatRoutes(app: AppInstance): Promise<void> {
       return {
         system: preview.assembled.systemText,
         trailing: preview.assembled.trailingSystemText,
+        thought: latestThought(app.db, chat.id),
         history: preview.assembled.historyMessages.map((message) => ({
           role: message.role,
           content: previewContentOf(message.content),

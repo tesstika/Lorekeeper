@@ -35,6 +35,11 @@ export const useStreamingStore = defineStore('streaming', () => {
   /** Set when generation was refused because the Ollama model is not pulled. */
   const pendingDownload = ref<PendingModelDownload | null>(null);
   /**
+   * Two-pass stage text from SSE `status` events ("Thinking..." while Pass 1
+   * runs); cleared as soon as narrative tokens arrive or the stream ends.
+   */
+  const statusMessage = ref<string | null>(null);
+  /**
    * Terminal outcome of the last stream, taken from the SSE events themselves
    * (D9 Stage B dot tone). Derived after the fact from the local cache would
    * race the reconcile refetch, so it is recorded as events arrive.
@@ -56,6 +61,7 @@ export const useStreamingStore = defineStore('streaming', () => {
     chatId.value = id;
     streamingVariantId.value = null;
     streamingGroupId.value = null;
+    statusMessage.value = null;
     lastOutcome.value = 'stop';
     controller = new AbortController();
 
@@ -72,9 +78,14 @@ export const useStreamingStore = defineStore('streaming', () => {
           break;
         }
         case 'delta': {
+          statusMessage.value = null;
           if (streamingVariantId.value) {
             chats.appendDelta(id, streamingVariantId.value, event.text);
           }
+          break;
+        }
+        case 'status': {
+          statusMessage.value = event.message;
           break;
         }
         case 'done': {
@@ -99,7 +110,11 @@ export const useStreamingStore = defineStore('streaming', () => {
         lastOutcome.value = 'aborted';
       } else if (error instanceof ApiError && error.code === 'model_not_downloaded') {
         // Must precede the generic 409 branch — the pre-flight uses 409 too.
-        const modelTag = chats.activeChat?.chat.modelId ?? settings.globalDefaults.modelId ?? '';
+        // Both pre-flights quote the tag in the message (primary or thinking
+        // model); fall back to the effective chat model id.
+        const quoted = /"([^"]+)" is not downloaded/.exec(error.message)?.[1];
+        const modelTag =
+          quoted ?? chats.activeChat?.chat.modelId ?? settings.globalDefaults.modelId ?? '';
         pendingDownload.value = { chatId: id, targetMessageId, modelTag };
       } else if (error instanceof ApiError && error.statusCode === 409) {
         ui.notify('A reply is already being written for this chat.', 'info');
@@ -120,6 +135,7 @@ export const useStreamingStore = defineStore('streaming', () => {
       chatId.value = null;
       streamingVariantId.value = null;
       streamingGroupId.value = null;
+      statusMessage.value = null;
     }
   }
 
@@ -133,6 +149,7 @@ export const useStreamingStore = defineStore('streaming', () => {
     streamingGroupId,
     isStreaming,
     pendingDownload,
+    statusMessage,
     lastOutcome,
     start,
     stop,

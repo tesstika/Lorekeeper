@@ -17,6 +17,7 @@ import {
   type PromptHistoryMessage,
   renderSystemPrompt,
   renderTrailingSystemSlot,
+  sanitizeHistoryMarkup,
   selectHistoryForPrompt,
 } from './systemPrompt';
 
@@ -48,6 +49,8 @@ export interface AssembledPrompt {
   request: ChatRequest;
   systemText: string;
   trailingSystemText: string | null;
+  /** Pass 1 thinking plan injected this turn (stepped thinking); else null. */
+  thoughtText: string | null;
   historyBudgetTokens: number;
   usedTokens: number;
   droppedTurnCount: number;
@@ -77,6 +80,11 @@ export interface BuildPromptOptions {
   imageCaptioningEnabled?: boolean;
   /** Captioner failure reasons from the pre-pass, shown in prompt warnings. */
   captionWarnings?: string[];
+  /**
+   * Pass 1 plan (stepped thinking) injected as the CURRENT-turn guidance
+   * block after the trailing slot; never part of history (pruning rule).
+   */
+  thoughtText?: string | null;
 }
 
 const SUPPORTED_IMAGE_MIME = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/gif']);
@@ -132,7 +140,9 @@ export function buildAssembledPrompt(options: BuildPromptOptions): AssembledProm
 
   const historyMessages: ChatMessageInput[] = selection.included.map((message) => ({
     role: message.role,
-    content: message.text,
+    // Prompt-side hygiene: reasoning-model markup in past replies re-teaches
+    // the broken format every turn. Stored message text is never modified.
+    content: message.role === 'assistant' ? sanitizeHistoryMarkup(message.text) : message.text,
   }));
 
   // Multimodal payload on the FINAL user turn. Captioned attachments become
@@ -194,6 +204,16 @@ export function buildAssembledPrompt(options: BuildPromptOptions): AssembledProm
   if (trailingSystemText) {
     messages.push({ role: 'system', content: trailingSystemText });
   }
+  const thoughtText = options.thoughtText?.trim() ?? '';
+  if (thoughtText.length > 0) {
+    messages.push({
+      role: 'system',
+      content:
+        `<character_internal_guidance>\n` +
+        'Private plan for your next reply — for context only. React to the scene in your own words; NEVER quote this text verbatim and never emit its markup.\n\n' +
+        `${thoughtText}\n</character_internal_guidance>`,
+    });
+  }
 
   const request: ChatRequest = {
     model: '', // filled by the caller from the resolved model id
@@ -212,6 +232,7 @@ export function buildAssembledPrompt(options: BuildPromptOptions): AssembledProm
     request,
     systemText: probe.systemText,
     trailingSystemText,
+    thoughtText: thoughtText.length > 0 ? thoughtText : null,
     historyBudgetTokens,
     usedTokens: estimateHistoryTokens(selection.included),
     droppedTurnCount: selection.droppedCount,

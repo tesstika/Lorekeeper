@@ -64,6 +64,12 @@ describe('GET /api/health', () => {
       .all()
       .map((row) => row.name);
     expect(attachmentColumns).toContain('caption');
+    // Reasoning helper: messages.thought caches Pass 1 plans.
+    const messageColumns = app.sqlite
+      .query<{ name: string }, []>('PRAGMA table_info(messages)')
+      .all()
+      .map((row) => row.name);
+    expect(messageColumns).toContain('thought');
   });
 
   it('returns a 404 envelope for unknown api routes', async () => {

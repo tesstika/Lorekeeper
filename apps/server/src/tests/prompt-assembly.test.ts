@@ -426,4 +426,51 @@ describe('image captioning payload rules (vision helper)', () => {
     expect(Array.isArray(finalTurn?.content)).toBe(true);
     expect(assembled.warnings.join(' ')).toContain('images are sent anyway');
   });
+
+  it('injects the thought plan as the final guidance system message (current turn only)', () => {
+    const assembled = buildAssembledPrompt({
+      character: makeCharacter() as never,
+      persona: null,
+      promptTemplate: { systemTemplate: 'You are {{char}}.', postHistoryInstructions: '' },
+      globalDefaults: { contextBudgetTokens: 8192 },
+      preset: null,
+      modelInfo: null,
+      history: [msg(0, 'assistant', 'Hi.'), msg(1, 'user', 'Hello there.')],
+      finalUserAttachments: [],
+      dataDir: tmpdir(),
+      thoughtText: 'Stay coy; the user is probing.',
+    });
+    const messages = assembled.request.messages;
+    const guidance = messages.at(-1);
+    expect(guidance?.role).toBe('system');
+    expect(guidance?.content).toContain('<character_internal_guidance>');
+    expect(guidance?.content).toContain('Stay coy; the user is probing.');
+    expect(guidance?.content).toContain('NEVER quote this text verbatim');
+    expect(guidance?.content).toContain('</character_internal_guidance>');
+    // The plan is not part of the history messages themselves (pruning rule).
+    for (const message of assembled.historyMessages) {
+      expect(message.content).not.toContain('character_internal_guidance');
+      expect(message.content).not.toContain('Stay coy');
+    }
+    expect(assembled.thoughtText).toBe('Stay coy; the user is probing.');
+  });
+
+  it('omits the guidance block entirely when no thought was produced', () => {
+    const assembled = buildAssembledPrompt({
+      character: makeCharacter() as never,
+      persona: null,
+      promptTemplate: { systemTemplate: 'S', postHistoryInstructions: '' },
+      globalDefaults: { contextBudgetTokens: 8192 },
+      preset: null,
+      modelInfo: null,
+      history: [msg(1, 'user', 'hi')],
+      finalUserAttachments: [],
+      dataDir: tmpdir(),
+      thoughtText: null,
+    });
+    expect(
+      assembled.request.messages.every((m) => !m.content.toString().includes('guidance')),
+    ).toBe(true);
+    expect(assembled.thoughtText).toBeNull();
+  });
 });

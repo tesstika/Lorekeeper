@@ -286,6 +286,38 @@ export function toNativeOptions(request: ChatRequest): Record<string, unknown> {
   return options;
 }
 
+/**
+ * Ollama's engine 400s any message list ending with 2+ assistant messages
+ * ("Cannot have 2 or more assistant messages at the end of the list" —
+ * observed live 2026-09-12; other providers tolerate continuation lists).
+ * Consecutive assistant rows occur after back-to-back generations without an
+ * intervening user turn. Keep only the LAST trailing assistant — earlier ones
+ * are superseded replies.
+ */
+export function normalizeTrailingAssistants<T extends { role: string }>(messages: T[]): T[] {
+  let runStart = messages.length;
+  while (runStart > 0 && messages[runStart - 1]?.role === 'assistant') {
+    runStart -= 1;
+  }
+  const trailingCount = messages.length - runStart;
+  if (trailingCount <= 1) return messages;
+  return [...messages.slice(0, runStart), messages[messages.length - 1] as T];
+}
+
+/**
+ * Removes ALL trailing assistant messages so the list ends on the user's
+ * turn. Pass 1 (thinking) needs the user's last message as its focal point —
+ * ending on an assistant turn makes continuation-prone reasoning models
+ * parrot that reply instead of planning the reaction.
+ */
+export function trimTrailingAssistants<T extends { role: string }>(messages: T[]): T[] {
+  let end = messages.length;
+  while (end > 0 && messages[end - 1]?.role === 'assistant') {
+    end -= 1;
+  }
+  return messages.slice(0, end);
+}
+
 function mapFinishReason(doneReason: unknown): 'stop' | 'length' {
   return doneReason === 'length' ? 'length' : 'stop';
 }
@@ -302,7 +334,7 @@ export async function* streamChatOllama(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model,
-        messages: toNativeMessages(request),
+        messages: normalizeTrailingAssistants(toNativeMessages(request)),
         stream: true,
         options: toNativeOptions(request),
       }),

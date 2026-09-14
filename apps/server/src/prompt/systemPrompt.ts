@@ -14,6 +14,21 @@ export function estimateTokens(text: string): number {
   return Math.ceil((text.length / 4) * 1.05);
 }
 
+/**
+ * Prompt-side markup hygiene for history text: reasoning-model artifacts
+ * (`<think>…</think>` blocks, fake `<TOOL_CALLS>`/`<action>` tags, bracketed
+ * ALL-CAPS tokens) leak into past replies and keep re-teaching the model the
+ * broken format on every later turn (observed live 2026-09-12). Stripping is
+ * PROMPT-ONLY — stored/edited message text is never modified. Applied to
+ * assistant history messages during assembly.
+ */
+export function sanitizeHistoryMarkup(raw: string): string {
+  return raw
+    .replace(/<think>[\s\S]*?<\/think>/gi, '')
+    .replace(/<\/?[a-zA-Z][^>\n]{0,120}>/g, '')
+    .replace(/\[[A-Z][A-Z_0-9]{2,}\]/g, '');
+}
+
 export const EXAMPLE_DIALOGUE_BUDGET_SHARE = 0.25;
 
 const EXAMPLE_DIALOGUE_BLOCK = /<ExampleDialogue>[\s\S]*?<\/ExampleDialogue>/g;

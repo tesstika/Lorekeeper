@@ -1,5 +1,6 @@
 import {
   OLLAMA_CAPTIONER_MODEL,
+  OLLAMA_THINKING_MODELS,
   type OllamaPullProgressEvent,
   ollamaModelStateQuerySchema,
   ollamaModelStateResponseSchema,
@@ -361,10 +362,12 @@ export async function registerProviderRoutes(app: AppInstance): Promise<void> {
     { schema: { body: ollamaPullBodySchema } },
     async (request, reply) => {
       const { modelTag } = request.body;
-      // Curated RP models plus the image-captioning vision helper.
+      // Curated RP models, the image-captioning vision helper, and the
+      // stepped-thinking reasoning models.
       const pullable =
         OLLAMA_CURATED_MODELS.some((entry) => entry.tag === modelTag) ||
-        modelTag === OLLAMA_CAPTIONER_MODEL;
+        modelTag === OLLAMA_CAPTIONER_MODEL ||
+        OLLAMA_THINKING_MODELS.some((entry) => entry.tag === modelTag);
       if (!pullable) {
         throw httpError(400, 'invalid_model_tag', 'Only curated Lorekeeper models can be pulled.');
       }

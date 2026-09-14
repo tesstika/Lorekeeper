@@ -450,6 +450,60 @@ describe('image captioning settings section', () => {
   });
 });
 
+describe('stepped thinking settings section', () => {
+  it('GET returns schema defaults with the first curated thinking model', async () => {
+    const response = await app.inject({ method: 'GET', url: '/api/settings' });
+    expect(response.statusCode).toBe(200);
+    expect(response.json().steppedThinking).toEqual({
+      enabled: false,
+      providerId: 'ollama',
+      modelId: 'hf.co/Abiray/Huihui-Qwythos-9B-Claude-Mythos-5-1M-abliterated-GGUF:Q8_0',
+      maxTokens: 1024,
+      directive: expect.stringContaining('story analyst'),
+    });
+  });
+
+  it('PATCH merges partial steppedThinking values and keeps untouched keys', async () => {
+    const patched = await app.inject({
+      method: 'PATCH',
+      url: '/api/settings',
+      payload: {
+        steppedThinking: {
+          enabled: true,
+          modelId: 'hf.co/Aydge/Huihui-Qwen3.8-27B-abliterated-GGUF:Q4_K_M',
+        },
+      },
+    });
+    expect(patched.statusCode).toBe(200);
+    expect(patched.json().steppedThinking).toMatchObject({
+      enabled: true,
+      modelId: 'hf.co/Aydge/Huihui-Qwen3.8-27B-abliterated-GGUF:Q4_K_M',
+      maxTokens: 1024,
+    });
+
+    // Untouched-keys regression: a maxTokens-only PATCH keeps enabled + model.
+    const tokensOnly = await app.inject({
+      method: 'PATCH',
+      url: '/api/settings',
+      payload: { steppedThinking: { maxTokens: 2048 } },
+    });
+    expect(tokensOnly.json().steppedThinking).toMatchObject({
+      enabled: true,
+      modelId: 'hf.co/Aydge/Huihui-Qwen3.8-27B-abliterated-GGUF:Q4_K_M',
+      maxTokens: 2048,
+    });
+
+    // Out-of-range maxTokens → 400.
+    const invalid = await app.inject({
+      method: 'PATCH',
+      url: '/api/settings',
+      payload: { steppedThinking: { maxTokens: 64 } },
+    });
+    expect(invalid.statusCode).toBe(400);
+    expect(invalid.json()).toMatchObject({ code: 'validation_error' });
+  });
+});
+
 describe('display settings section', () => {
   it('GET returns the stars background effect as the default', async () => {
     const response = await app.inject({ method: 'GET', url: '/api/settings' });
