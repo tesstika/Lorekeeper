@@ -296,7 +296,11 @@ export async function registerProviderRoutes(app: AppInstance): Promise<void> {
     },
   );
 
-  /** Curated whitelist cross-referenced with the daemon's installed models. */
+  /**
+   * Curated whitelist + other installed models, cross-referenced with the
+   * daemon's /api/tags. Any installed tag outside the curated/captioner/
+   * thinking whitelists surfaces in `otherModels` (CLI pulls etc.).
+   */
   app.get(
     '/api/providers/ollama/models',
     { schema: { response: { 200: ollamaModelsResponseSchema } } },
@@ -312,9 +316,17 @@ export async function registerProviderRoutes(app: AppInstance): Promise<void> {
       if (!status.running) {
         // Offline daemon: every curated model reads as not downloaded — the
         // UI renders the offline banner instead of a broken catalog.
-        return { running: false, models: curated };
+        return { running: false, models: curated, otherModels: [] };
       }
       const tags = await fetchOllamaTags();
+      const whitelisted = new Set<string>([
+        ...OLLAMA_CURATED_MODELS.map((entry) => entry.tag),
+        OLLAMA_CAPTIONER_MODEL,
+        ...OLLAMA_THINKING_MODELS.map((entry) => entry.tag),
+      ]);
+      const otherModels = tags
+        .filter((tag) => ![...whitelisted].some((known) => ollamaTagsMatch(tag.name, known)))
+        .map((tag) => ({ tag: tag.name, sizeBytes: tag.size }));
       return {
         running: true,
         models: curated.map((model) => {
@@ -325,6 +337,7 @@ export async function registerProviderRoutes(app: AppInstance): Promise<void> {
             ...(pulled ? { sizeBytes: pulled.size } : {}),
           };
         }),
+        otherModels,
       };
     },
   );
@@ -354,23 +367,16 @@ export async function registerProviderRoutes(app: AppInstance): Promise<void> {
   );
 
   /**
-   * Streams a curated model pull as SSE progress frames. Hijacked like the
-   * generation endpoints; client disconnect aborts the upstream pull.
+   * Streams a model pull as SSE progress frames. Hijacked like the generation
+   * endpoints; client disconnect aborts the upstream pull. Any valid Ollama
+   * tag is accepted (the zod body schema sanitizes input) so users can pull
+   * custom models alongside the curated sets.
    */
   app.post(
     '/api/providers/ollama/pull',
     { schema: { body: ollamaPullBodySchema } },
     async (request, reply) => {
       const { modelTag } = request.body;
-      // Curated RP models, the image-captioning vision helper, and the
-      // stepped-thinking reasoning models.
-      const pullable =
-        OLLAMA_CURATED_MODELS.some((entry) => entry.tag === modelTag) ||
-        modelTag === OLLAMA_CAPTIONER_MODEL ||
-        OLLAMA_THINKING_MODELS.some((entry) => entry.tag === modelTag);
-      if (!pullable) {
-        throw httpError(400, 'invalid_model_tag', 'Only curated Lorekeeper models can be pulled.');
-      }
       const status = await fetchOllamaStatus();
       if (!status.running) {
         throw httpError(503, 'ollama_offline', OLLAMA_OFFLINE_MESSAGE);

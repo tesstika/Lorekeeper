@@ -364,10 +364,19 @@ export const ollamaCuratedModelSchema = z.object({
 });
 export type OllamaCuratedModel = z.output<typeof ollamaCuratedModelSchema>;
 
-/** `GET /api/providers/ollama/models` — curated list + download states. */
+/** `GET /api/providers/ollama/models` — curated list + download states + other installed models. */
+export const ollamaOtherModelSchema = z.object({
+  tag: z.string(),
+  /** Size on disk (installed via /api/tags, so always present). */
+  sizeBytes: z.number(),
+});
+export type OllamaOtherModel = z.output<typeof ollamaOtherModelSchema>;
+
 export const ollamaModelsResponseSchema = z.object({
   running: z.boolean(),
   models: z.array(ollamaCuratedModelSchema),
+  /** Installed tags outside the curated/captioner/thinking whitelists (CLI pulls etc.). */
+  otherModels: z.array(ollamaOtherModelSchema),
 });
 export type OllamaModelsResponse = z.output<typeof ollamaModelsResponseSchema>;
 
@@ -383,9 +392,19 @@ export const ollamaModelStateResponseSchema = z.object({
 });
 export type OllamaModelStateResponse = z.output<typeof ollamaModelStateResponseSchema>;
 
-/** `POST /api/providers/ollama/pull` body — tag must be on the curated whitelist. */
+/**
+ * `POST /api/providers/ollama/pull` body — any valid Ollama model tag
+ * (curated, captioner, thinking models, or a custom tag like
+ * `llama3.1:8b` / `hf.co/user/repo:quant`). Control characters are rejected.
+ */
 export const ollamaPullBodySchema = z.object({
-  modelTag: z.string().min(1).max(200),
+  modelTag: z
+    .string()
+    .min(1)
+    .max(300)
+    .trim()
+    // Printable ASCII + common unicode letters/digits; no whitespace/control chars.
+    .regex(/^[\x21-\x7e\u00a0-\uffff]+$/, 'Model tag contains invalid characters'),
 });
 
 /**

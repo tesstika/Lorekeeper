@@ -1,6 +1,7 @@
 import type {
   OllamaCuratedModel,
   OllamaModelStateResponse,
+  OllamaOtherModel,
   OllamaStatusResponse,
 } from '@lorekeeper/shared';
 import { defineStore } from 'pinia';
@@ -27,6 +28,8 @@ export interface OllamaPullState {
 export const useOllamaStore = defineStore('ollama', () => {
   const status = ref<OllamaStatusResponse | null>(null);
   const models = ref<OllamaCuratedModel[] | null>(null);
+  /** Installed tags outside the curated/captioner/thinking whitelists. */
+  const otherModels = ref<OllamaOtherModel[]>([]);
   const statusLoading = ref(false);
   const modelsLoading = ref(false);
   const pulls = ref<Record<string, OllamaPullState>>({});
@@ -51,11 +54,13 @@ export const useOllamaStore = defineStore('ollama', () => {
     }
   }
 
-  /** Curated catalog with Downloaded / Not Downloaded states + byte sizes. */
+  /** Curated catalog + other installed models with download states/sizes. */
   async function fetchModels(): Promise<void> {
     modelsLoading.value = true;
     try {
-      models.value = (await api.getOllamaModels()).models;
+      const response = await api.getOllamaModels();
+      models.value = response.models;
+      otherModels.value = response.otherModels ?? [];
     } finally {
       modelsLoading.value = false;
     }
@@ -135,6 +140,7 @@ export const useOllamaStore = defineStore('ollama', () => {
   return {
     status,
     models,
+    otherModels,
     statusLoading,
     modelsLoading,
     pulls,

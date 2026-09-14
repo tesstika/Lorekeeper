@@ -204,15 +204,24 @@ export function buildAssembledPrompt(options: BuildPromptOptions): AssembledProm
   if (trailingSystemText) {
     messages.push({ role: 'system', content: trailingSystemText });
   }
+  // Stepped thinking (feature spec: "system prompt or trailing slot"). The
+  // plan is folded into the LEADING system message — several Ollama chat
+  // templates (Qwen family) raise "System message must be at the beginning"
+  // for any system message that trails the history (observed live
+  // 2026-09-13 with Qwythos 9B as the primary model). The system message is
+  // rebuilt every generation, so the plan remains current-turn-only.
   const thoughtText = options.thoughtText?.trim() ?? '';
   if (thoughtText.length > 0) {
-    messages.push({
-      role: 'system',
-      content:
-        `<character_internal_guidance>\n` +
-        'Private plan for your next reply — for context only. React to the scene in your own words; NEVER quote this text verbatim and never emit its markup.\n\n' +
-        `${thoughtText}\n</character_internal_guidance>`,
-    });
+    const guidanceBlock =
+      `<character_internal_guidance>\n` +
+      'Private plan for your next reply — for context only. React to the scene in your own words; NEVER quote this text verbatim and never emit its markup.\n\n' +
+      `${thoughtText}\n</character_internal_guidance>`;
+    const systemMessage = messages.find((message) => message.role === 'system');
+    if (systemMessage && typeof systemMessage.content === 'string') {
+      systemMessage.content = `${systemMessage.content}\n\n${guidanceBlock}`;
+    } else {
+      messages.unshift({ role: 'system', content: guidanceBlock });
+    }
   }
 
   const request: ChatRequest = {

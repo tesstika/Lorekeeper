@@ -9,11 +9,13 @@ import {
   curatedOllamaModelInfos,
   fetchOllamaStatus,
   isOllamaModelPulled,
+  normalizeSystemPlacement,
   normalizeTrailingAssistants,
   OLLAMA_CURATED_MODELS,
   ollamaProvider,
   ollamaTagsMatch,
   pullOllamaModel,
+  trimTrailingAssistants,
 } from '../providers/ollama';
 import { toWireBody } from '../providers/openaiCompat';
 import type { ProviderError } from '../providers/types';
@@ -185,6 +187,42 @@ describe('ollamaTagsMatch', () => {
   it('matches a curated tag without suffix against its :latest variant', () => {
     expect(ollamaTagsMatch('a/b:latest', 'a/b')).toBe(true);
     expect(ollamaTagsMatch('a/b', 'a/b:latest')).toBe(false);
+  });
+
+  it('trimTrailingAssistants ends Pass 1 lists on the user turn', () => {
+    const trimmed = trimTrailingAssistants([
+      { role: 'user', content: 'question' },
+      { role: 'assistant', content: 'previous reply' },
+    ]);
+    expect(trimmed).toEqual([{ role: 'user', content: 'question' }]);
+    // User-final lists are untouched.
+    expect(trimTrailingAssistants([{ role: 'user', content: 'hi' }])).toHaveLength(1);
+  });
+
+  it('normalizeSystemPlacement merges trailing system messages into the leading one', () => {
+    const merged = normalizeSystemPlacement([
+      { role: 'system', content: 'leading' },
+      { role: 'user', content: 'q' },
+      { role: 'assistant', content: 'a' },
+      { role: 'system', content: 'PHI + jailbreak' },
+      {
+        role: 'system',
+        content: '<character_internal_guidance>plan</character_internal_guidance>',
+      },
+    ]);
+    expect(merged).toHaveLength(3);
+    expect(merged[0]?.role).toBe('system');
+    expect(merged[0]?.content).toContain('leading');
+    expect(merged[0]?.content).toContain('PHI + jailbreak');
+    expect(merged[0]?.content).toContain('plan');
+    expect(merged[1]).toEqual({ role: 'user', content: 'q' });
+    expect(merged[2]).toEqual({ role: 'assistant', content: 'a' });
+    // Lists without trailing systems pass through unchanged.
+    const untouched = [
+      { role: 'system', content: 's' },
+      { role: 'user', content: 'q' },
+    ];
+    expect(normalizeSystemPlacement(untouched)).toEqual(untouched);
   });
 
   it('matches a curated tag against a manually-pulled quantifier suffix (real-world case)', () => {
@@ -483,6 +521,7 @@ describe('ollama routes', () => {
           size: 14_111_222_333,
         },
         { name: 'hf.co/BeaverAI/Rocinante-XL-16B-v1b-GGUF:Q4_K_M', size: 9_999_999_999 },
+        { name: 'llama3.1:8b', size: 4_900_000_000 },
       ]),
     });
     const response = await app.inject({ method: 'GET', url: '/api/providers/ollama/models' });
@@ -490,6 +529,7 @@ describe('ollama routes', () => {
     const body = response.json() as {
       running: boolean;
       models: Array<{ label: string; downloaded: boolean; sizeBytes: number | null }>;
+      otherModels: Array<{ tag: string; sizeBytes: number }>;
     };
     expect(body.running).toBe(true);
     const byLabel = new Map(body.models.map((model) => [model.label, model]));
@@ -505,6 +545,8 @@ describe('ollama routes', () => {
       downloaded: true,
       sizeBytes: 9_999_999_999,
     });
+    // CLI-installed tags outside the whitelists surface in otherModels.
+    expect(body.otherModels).toEqual([{ tag: 'llama3.1:8b', sizeBytes: 4_900_000_000 }]);
   });
 
   it('POST /api/providers/ollama/test persists the connection probe', async () => {
@@ -528,14 +570,30 @@ describe('ollama routes', () => {
     expect(ollama?.status).toBe('connected');
   });
 
-  it('POST /api/providers/ollama/pull rejects non-curated tags', async () => {
-    const response = await app.inject({
+  it('POST /api/providers/ollama/pull accepts any valid tag and rejects malformed input', async () => {
+    // Custom tags are now pullable — the stream opens (daemon online).
+    stubFetch({
+      '/api/version': VERSION_ROUTE,
+      '/api/pull': PULL_ROUTE([{ status: 'pulling manifest' }, { status: 'success' }]),
+    });
+    const custom = await app.inject({
       method: 'POST',
       url: '/api/providers/ollama/pull',
-      payload: { modelTag: 'some/rogue-model' },
+      payload: { modelTag: 'qwen2.5-coder:32b' },
     });
-    expect(response.statusCode).toBe(400);
-    expect(response.json()).toMatchObject({ code: 'invalid_model_tag' });
+    expect(custom.statusCode).toBe(200);
+    expect(custom.payload).toContain('"status":"success"');
+
+    // Control characters / whitespace are rejected by the body schema.
+    for (const bad of ['bad tag with spaces', 'bad\ttab', 'bad\nnewline']) {
+      const invalid = await app.inject({
+        method: 'POST',
+        url: '/api/providers/ollama/pull',
+        payload: { modelTag: bad },
+      });
+      expect(invalid.statusCode).toBe(400);
+      expect(invalid.json()).toMatchObject({ code: 'validation_error' });
+    }
   });
 
   it('POST /api/providers/ollama/pull refuses to stream while the daemon is offline', async () => {
@@ -729,7 +787,8 @@ describe('stepped thinking two-pass', () => {
       .all();
     expect(rows[0]?.thought).toBe('PLAN: stay coy');
 
-    // Pass 2 request carries the guidance block as its final system message.
+    // Pass 2 request folds the guidance block into the LEADING system
+    // message (Qwen-family chat templates reject trailing system messages).
     const pass2 = (fetchMock.mock.calls as Array<[string, RequestInit]>).find(
       ([url, init]) =>
         String(url).includes('/api/chat') &&
@@ -739,11 +798,16 @@ describe('stepped thinking two-pass', () => {
     const body = JSON.parse(String(pass2?.[1].body)) as {
       messages?: Array<{ role: string; content: string }>;
     };
-    const guidance = body.messages?.at(-1);
+    const guidance = body.messages?.at(0);
     expect(guidance?.role).toBe('system');
     expect(guidance?.content).toContain('<character_internal_guidance>');
     expect(guidance?.content).toContain('PLAN: stay coy');
     expect(guidance?.content).toContain('</character_internal_guidance>');
+    // No system message trails the history.
+    const trailingSystems = body.messages?.filter(
+      (message, index) => message.role === 'system' && index > 0,
+    );
+    expect(trailingSystems).toHaveLength(0);
   });
 
   it('preflight 409s with the thinking tag when the reasoning model is not pulled', async () => {

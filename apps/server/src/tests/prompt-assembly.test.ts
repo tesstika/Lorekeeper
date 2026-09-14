@@ -427,7 +427,7 @@ describe('image captioning payload rules (vision helper)', () => {
     expect(assembled.warnings.join(' ')).toContain('images are sent anyway');
   });
 
-  it('injects the thought plan as the final guidance system message (current turn only)', () => {
+  it('injects the thought plan into the leading system message (current turn only)', () => {
     const assembled = buildAssembledPrompt({
       character: makeCharacter() as never,
       persona: null,
@@ -441,12 +441,16 @@ describe('image captioning payload rules (vision helper)', () => {
       thoughtText: 'Stay coy; the user is probing.',
     });
     const messages = assembled.request.messages;
-    const guidance = messages.at(-1);
+    // Ollama chat templates (Qwen family) reject trailing system messages —
+    // the plan rides inside the leading system message instead.
+    const guidance = messages[0];
     expect(guidance?.role).toBe('system');
     expect(guidance?.content).toContain('<character_internal_guidance>');
     expect(guidance?.content).toContain('Stay coy; the user is probing.');
     expect(guidance?.content).toContain('NEVER quote this text verbatim');
     expect(guidance?.content).toContain('</character_internal_guidance>');
+    // Exactly ONE system message — none trailing the history.
+    expect(messages.filter((m) => m.role === 'system')).toHaveLength(1);
     // The plan is not part of the history messages themselves (pruning rule).
     for (const message of assembled.historyMessages) {
       expect(message.content).not.toContain('character_internal_guidance');

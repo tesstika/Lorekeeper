@@ -62,6 +62,7 @@ const apiState = vi.hoisted(() => {
       sizeBytes: number | null;
     }>,
     pulledTags: [] as string[],
+    otherModels: [] as Array<{ tag: string; sizeBytes: number }>,
     moondreamState: { running: true, downloaded: false, sizeBytes: null } as Record<
       string,
       unknown
@@ -124,6 +125,7 @@ vi.mock('@/api', () => ({
     getOllamaModels: async () => ({
       running: apiState.ollamaStatus.running,
       models: apiState.clone(apiState.ollamaModels),
+      otherModels: apiState.clone(apiState.otherModels),
     }),
     getOllamaModelState: async () => apiState.clone(apiState.moondreamState),
   },
@@ -159,6 +161,10 @@ beforeEach(() => {
     sizeBytes: index === 0 ? 14_111_222_333 : null,
   }));
   apiState.pulledTags = [];
+  apiState.otherModels = [
+    { tag: 'llama3.1:8b', sizeBytes: 4_900_000_000 },
+    { tag: 'mistral-small:latest', sizeBytes: 1_200_000_000 },
+  ];
   apiState.moondreamState = { running: true, downloaded: false, sizeBytes: null };
   apiState.settings.imageCaptioning = {
     enabled: false,
@@ -299,6 +305,55 @@ describe('EngineCard — Ollama model library', () => {
     expect(wrapper.text()).toContain('Schematron V2 Turbo');
     expect(wrapper.find('button[aria-label^="Download "]').exists()).toBe(false);
     expect(wrapper.text()).not.toContain('Downloaded');
+  });
+
+  it('lists other installed local models and selects one via PATCH', async () => {
+    const store = useSettingsStore();
+    await store.load();
+    const Host = host('<div><EngineCard /></div>', { EngineCard });
+    const wrapper = mount(Host, { global: { plugins: [vaporInteropPlugin] } });
+    await flushPromises();
+
+    await wrapper.find('button[aria-label="Open model library"]').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('Installed local models');
+    expect(wrapper.text()).toContain('llama3.1:8b');
+    expect(wrapper.text()).toContain('4.6 GB');
+    expect(wrapper.text()).toContain('mistral-small:latest');
+
+    const llamaRow = wrapper.findAll('button').find((b) => b.text().includes('llama3.1:8b'));
+    await llamaRow?.trigger('click');
+    await flushPromises();
+    expect((apiState.settings.globalDefaults as { modelId: string }).modelId).toBe('llama3.1:8b');
+  });
+
+  it('probes, downloads, and selects a custom model tag', async () => {
+    const store = useSettingsStore();
+    await store.load();
+    const Host = host('<div><EngineCard /></div>', { EngineCard });
+    const wrapper = mount(Host, { global: { plugins: [vaporInteropPlugin] } });
+    await flushPromises();
+
+    await wrapper.find('button[aria-label="Open model library"]').trigger('click');
+    await flushPromises();
+
+    const input = wrapper.find('input[aria-label="Custom model tag"]');
+    expect(input.exists()).toBe(true);
+    await input.setValue('qwen2.5:14b');
+    await wrapper.find('button[aria-label="Check custom model status"]').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('Not downloaded');
+    expect(wrapper.find('button[aria-label="Download custom model"]').exists()).toBe(true);
+
+    await wrapper.find('button[aria-label="Download custom model"]').trigger('click');
+    await flushPromises();
+    expect(apiState.pulledTags).toContain('qwen2.5:14b');
+
+    await wrapper.find('button[aria-label="Select custom model"]').trigger('click');
+    await flushPromises();
+    expect((apiState.settings.globalDefaults as { modelId: string }).modelId).toBe('qwen2.5:14b');
   });
 });
 

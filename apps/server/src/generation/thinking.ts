@@ -101,10 +101,93 @@ export function buildThinkingMessages(
     recent.unshift(message);
   }
   for (const message of recent) {
-    messages.push({ role: message.role, content: message.text });
+    // History hygiene: contaminated assistant replies (pre-fix markup) would
+    // otherwise lead the reasoning model to echo markup back — which then
+    // sanitizes to an empty plan.
+    messages.push({
+      role: message.role,
+      content: message.role === 'assistant' ? sanitizeHistoryMarkup(message.text) : message.text,
+    });
   }
   messages.push({ role: 'user', content: directive });
   return messages;
+}
+
+const THINKING_ATTEMPTS = 3;
+const THINKING_RETRY_PAUSE_MS = 700;
+
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+interface ThinkingAttempt {
+  /** Non-null when a usable plan was produced. */
+  raw: string | null;
+  /** Hard failure description (offline / HTTP error / unreadable). */
+  failure: string | null;
+  /** True when the caller aborted (Stop) — no warning, no retry. */
+  aborted: boolean;
+}
+
+async function attemptThinking(
+  model: string,
+  directive: string,
+  characterContextText: string,
+  history: PromptHistoryMessage[],
+  maxTokens: number,
+  signal: AbortSignal,
+): Promise<ThinkingAttempt> {
+  let response: Response;
+  try {
+    response = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        messages: trimTrailingAssistants(
+          buildThinkingMessages(directive, characterContextText, history),
+        ),
+        stream: false,
+        keep_alive: 0,
+        options: { num_ctx: 8192, num_predict: maxTokens },
+      }),
+      signal: AbortSignal.any([signal, AbortSignal.timeout(THINKING_TIMEOUT_MS)]),
+    });
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError')
+      return { raw: null, failure: null, aborted: true };
+    return {
+      raw: null,
+      failure: `Stepped thinking failed: Ollama is not reachable (${error instanceof Error ? error.message : String(error)}).`,
+      aborted: false,
+    };
+  }
+  if (!response.ok) {
+    let detail = '';
+    try {
+      const body = (await response.json()) as { error?: unknown } | null;
+      if (typeof body?.error === 'string') detail = body.error;
+    } catch {
+      // keep generic detail
+    }
+    return {
+      raw: null,
+      failure: `Stepped thinking failed with HTTP ${response.status}${detail ? `: ${detail}` : ''}.`,
+      aborted: false,
+    };
+  }
+  try {
+    const body = (await response.json()) as { message?: { content?: unknown } } | null;
+    return {
+      raw: typeof body?.message?.content === 'string' ? body.message.content : '',
+      failure: null,
+      aborted: false,
+    };
+  } catch {
+    return {
+      raw: null,
+      failure: 'Stepped thinking returned an unreadable response.',
+      aborted: false,
+    };
+  }
 }
 
 /** Runs Pass 1 against the curated Ollama reasoning model. Never throws. */
@@ -127,70 +210,38 @@ export async function runThinkingPass(options: {
   const persona = options.config.personaId
     ? getPersona(options.db, options.config.personaId)
     : null;
-  const messages = buildThinkingMessages(
-    renderDirective(settings.directive, character.name, persona?.name ?? 'the user'),
-    characterContext(character, persona?.name ?? null, persona?.description ?? null),
-    options.history,
+  const directive = renderDirective(
+    settings.directive,
+    character.name,
+    persona?.name ?? 'the user',
+  );
+  const contextText = characterContext(
+    character,
+    persona?.name ?? null,
+    persona?.description ?? null,
   );
 
-  let response: Response;
-  try {
-    response = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model,
-        messages: trimTrailingAssistants(messages),
-        stream: false,
-        keep_alive: 0,
-        options: { num_ctx: 8192, num_predict: settings.maxTokens },
-      }),
-      signal: AbortSignal.any([options.signal, AbortSignal.timeout(THINKING_TIMEOUT_MS)]),
-    });
-  } catch (error) {
-    if (error instanceof Error && error.name === 'AbortError')
-      return { thought: null, warning: null };
-    return {
-      thought: null,
-      warning: `Stepped thinking failed: Ollama is not reachable (${error instanceof Error ? error.message : String(error)}).`,
-    };
+  // Qwythos intermittently returns whitespace-only output (observed live
+  // 2026-09-13: ~1 in 3 runs) — retry a couple of times before degrading.
+  let lastWarning = 'Stepped thinking returned an empty plan; continuing without guidance.';
+  for (let attempt = 0; attempt < THINKING_ATTEMPTS; attempt += 1) {
+    if (options.signal.aborted) return { thought: null, warning: null };
+    if (attempt > 0) await sleep(THINKING_RETRY_PAUSE_MS);
+    const outcome = await attemptThinking(
+      model,
+      directive,
+      contextText,
+      options.history,
+      settings.maxTokens,
+      options.signal,
+    );
+    if (outcome.aborted) return { thought: null, warning: null };
+    if (outcome.failure) return { thought: null, warning: outcome.failure };
+    const thought = sanitizeThought(outcome.raw ?? '');
+    if (thought.length > 0) return { thought, warning: null };
+    lastWarning = 'Stepped thinking returned an empty plan; continuing without guidance.';
   }
-  if (!response.ok) {
-    let detail = '';
-    try {
-      const body = (await response.json()) as { error?: unknown } | null;
-      if (typeof body?.error === 'string') detail = body.error;
-    } catch {
-      // keep generic detail
-    }
-    return {
-      thought: null,
-      warning: `Stepped thinking failed with HTTP ${response.status}${detail ? `: ${detail}` : ''}.`,
-    };
-  }
-  try {
-    const body = (await response.json()) as { message?: { content?: unknown } } | null;
-    const raw = typeof body?.message?.content === 'string' ? body.message.content.trim() : '';
-    if (raw.length === 0) {
-      return {
-        thought: null,
-        warning: 'Stepped thinking returned an empty plan; continuing without guidance.',
-      };
-    }
-    const thought = sanitizeThought(raw);
-    if (thought.length === 0) {
-      return {
-        thought: null,
-        warning: 'Stepped thinking returned only markup; continuing without guidance.',
-      };
-    }
-    return { thought, warning: null };
-  } catch {
-    return {
-      thought: null,
-      warning: 'Stepped thinking returned an unreadable response; continuing without guidance.',
-    };
-  }
+  return { thought: null, warning: lastWarning };
 }
 
 /**

@@ -103,9 +103,85 @@ const libraryRows = computed(() =>
 async function downloadModel(tag: string): Promise<void> {
   try {
     await ollama.startPull(tag);
+    await ollama.checkModelState(tag).catch(() => {});
   } catch (error) {
     ui.notify(describeApiError(error), 'error');
   }
+}
+
+// -- Custom Ollama tag entry (probe / download / select) ---------------------
+
+const customTag = ref('');
+const probedTag = ref<string | null>(null);
+const probing = ref(false);
+
+function cleanCustomTag(): string {
+  return customTag.value.trim();
+}
+
+async function probeCustom(): Promise<void> {
+  const tag = cleanCustomTag();
+  if (!tag) return;
+  probing.value = true;
+  try {
+    await ollama.checkModelState(tag);
+    probedTag.value = tag;
+  } catch {
+    probedTag.value = null;
+    ui.notify('Ollama is not reachable — start the daemon and try again.', 'error');
+  } finally {
+    probing.value = false;
+  }
+}
+
+const customProbed = computed(
+  () => probedTag.value !== null && probedTag.value === cleanCustomTag(),
+);
+const customState = computed(() => (probedTag.value ? ollama.modelState(probedTag.value) : null));
+const customPull = computed(() => (probedTag.value ? ollama.pullState(probedTag.value) : null));
+const customDownloaded = computed(
+  () => (customState.value?.downloaded ?? false) || (customPull.value?.success ?? false),
+);
+const customPercent = computed(() => {
+  const pull = customPull.value;
+  if (!pull || pull.completed === null || pull.total === null || pull.total <= 0) return 0;
+  return Math.min(100, Math.round((pull.completed / pull.total) * 100));
+});
+
+async function downloadCustom(): Promise<void> {
+  if (!probedTag.value) return;
+  try {
+    await ollama.startPull(probedTag.value);
+    await ollama.checkModelState(probedTag.value).catch(() => {});
+  } catch (error) {
+    ui.notify(describeApiError(error), 'error');
+  }
+}
+
+function selectCustom(): void {
+  const tag = probedTag.value;
+  if (!tag) return;
+  void store
+    .updateGlobalDefaults({ modelId: tag })
+    .then(() => {
+      ui.notify(`Default model set to ${tag}`, 'success');
+      libraryOpen.value = false;
+    })
+    .catch((error) => ui.notify(describeApiError(error), 'error'));
+}
+
+/** Selects an already-installed tag from the other-models list. */
+function selectCustomTag(tag: string): void {
+  void store
+    .updateGlobalDefaults({ modelId: tag })
+    .then(() => ui.notify(`Default model set to ${tag}`, 'success'))
+    .catch((error) => ui.notify(describeApiError(error), 'error'));
+}
+
+function onCustomTagInput(event: Event): void {
+  customTag.value = (event.target as HTMLInputElement).value;
+  // Editing the tag invalidates the previous probe.
+  probedTag.value = null;
 }
 
 // M4 a11y: the model-library modal traps focus, closes on Escape and
@@ -472,6 +548,124 @@ function contextTag(model: ModelInfo): string | null {
               </button>
             </template>
           </div>
+
+          <!-- Ollama only: other installed local models (CLI pulls etc.). -->
+          <template v-if="isOllama && ollama.otherModels.length > 0">
+            <div class="px-3 pb-1 pt-3 text-[10.5px] font-semibold uppercase tracking-wider text-outline">
+              Installed local models
+            </div>
+            <div
+              v-for="other in ollama.otherModels"
+              :key="other.tag"
+              class="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-surface-container"
+            >
+              <button
+                type="button"
+                class="flex min-w-0 flex-1 items-center justify-between gap-3 text-left"
+                @click="selectCustomTag(other.tag)"
+              >
+                <div class="min-w-0">
+                  <span class="block truncate font-mono text-[13px] text-on-surface">{{ other.tag }}</span>
+                  <span v-if="formatBytes(other.sizeBytes)" class="text-[10px] text-outline">{{ formatBytes(other.sizeBytes) }}</span>
+                </div>
+                <span
+                  v-if="store.activeModelId === other.tag"
+                  class="flex shrink-0 items-center gap-1 rounded-full bg-primary-container/20 px-2 py-0.5 text-[10px] font-semibold text-primary"
+                >
+                  <IconCheck class="size-3" /> Selected
+                </span>
+              </button>
+              <span class="shrink-0 rounded-full bg-emerald-900/30 px-2 py-0.5 text-[10px] font-medium text-emerald-300">
+                Installed
+              </span>
+            </div>
+          </template>
+
+          <!-- Ollama only: custom model tag entry (probe / download / select). -->
+          <template v-if="isOllama">
+            <div class="px-3 pb-1 pt-3 text-[10.5px] font-semibold uppercase tracking-wider text-outline">
+              Custom model tag
+            </div>
+            <div class="mx-3 mb-1 space-y-2 rounded-lg border border-outline-variant/30 bg-surface-container-low p-2.5">
+              <div class="flex items-center gap-2">
+                <input
+                  :value="customTag"
+                  type="text"
+                  class="w-full rounded-lg border border-outline-variant/30 bg-surface-container-lowest px-3 py-2 font-mono text-[12px] text-on-surface placeholder:text-outline focus:border-primary/60 focus:outline-none"
+                  placeholder="e.g. qwen2.5:14b or hf.co/user/repo:quant"
+                  aria-label="Custom model tag"
+                  spellcheck="false"
+                  @input="onCustomTagInput($event)"
+                  @keydown.enter="probeCustom()"
+                />
+                <button
+                  type="button"
+                  class="shrink-0 rounded-md border border-outline-variant/40 bg-surface-container px-2.5 py-2 text-[12px] font-medium text-primary transition-colors hover:bg-surface-container-high disabled:opacity-50"
+                  :disabled="!cleanCustomTag() || probing"
+                  aria-label="Check custom model status"
+                  @click="probeCustom()"
+                >
+                  {{ probing ? 'Checking…' : 'Check' }}
+                </button>
+              </div>
+              <template v-if="customProbed">
+                <div v-if="customPull && (customPull.active || customPull.error)" class="space-y-1">
+                  <div class="flex items-center justify-between gap-1 text-[10px] leading-3.5">
+                    <span class="truncate" :class="customPull.error ? 'text-error' : 'text-secondary'">{{ customPull.status }}</span>
+                    <span class="font-mono text-primary">{{ customPercent }}%</span>
+                  </div>
+                  <div class="h-1.5 w-full overflow-hidden rounded-full bg-surface-container-highest">
+                    <div
+                      class="h-full rounded-full"
+                      :class="customPull.error ? 'bg-error' : 'bg-primary'"
+                      :style="{ width: `${customPercent}%` }"
+                    ></div>
+                  </div>
+                  <div class="flex items-center justify-between gap-1">
+                    <span class="truncate font-mono text-[10px] text-outline">
+                      {{ formatBytes(customPull.completed) ?? '…' }} / {{ formatBytes(customPull.total) ?? '…' }}
+                    </span>
+                    <button
+                      v-if="customPull.active"
+                      type="button"
+                      class="shrink-0 text-[10px] text-on-surface-variant transition-colors hover:text-error"
+                      aria-label="Cancel custom model download"
+                      @click="ollama.cancelPull(probedTag ?? '')"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+                <div v-else class="flex items-center justify-between gap-2">
+                  <div v-if="customDownloaded" class="flex items-center gap-1 rounded-full bg-emerald-900/30 px-2 py-0.5 text-[10px] font-medium text-emerald-300">
+                    <IconCheck class="size-3" /> Downloaded
+                    <span v-if="formatBytes(customState?.sizeBytes ?? null)" class="font-mono text-outline">{{ formatBytes(customState?.sizeBytes ?? null) }}</span>
+                  </div>
+                  <span v-else class="text-[11px] text-outline">Not downloaded</span>
+                  <div class="flex items-center gap-1.5">
+                    <button
+                      v-if="!customDownloaded"
+                      type="button"
+                      class="flex items-center gap-1 rounded-md border border-outline-variant/40 bg-surface-container px-2 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-surface-container-high"
+                      aria-label="Download custom model"
+                      @click="downloadCustom()"
+                    >
+                      <IconDownload class="size-3" />
+                      Download
+                    </button>
+                    <button
+                      type="button"
+                      class="rounded-md bg-primary-container px-2.5 py-1 text-[11px] font-semibold text-on-primary-container transition active:scale-95"
+                      aria-label="Select custom model"
+                      @click="selectCustom()"
+                    >
+                      Select Model
+                    </button>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
         </div>
         <div class="border-t border-outline-variant/25 px-4 py-2 text-[11px] text-outline">
           Catalogs are cached for 24h · manual model IDs always allowed

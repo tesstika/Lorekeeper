@@ -318,6 +318,41 @@ export function trimTrailingAssistants<T extends { role: string }>(messages: T[]
   return messages.slice(0, end);
 }
 
+/**
+ * Merges every non-leading system message into the first one. Many Ollama
+ * chat templates (Qwen family) raise "System message must be at the
+ * beginning" when a system message trails the conversation — the trailing
+ * PHI/jailbreak slot and any future trailing system content must ride inside
+ * the leading system message for Ollama (content preserved, order collapsed).
+ */
+export function normalizeSystemPlacement<T extends { role: string; content: string }>(
+  messages: T[],
+): T[] {
+  const firstSystem = messages.findIndex((message) => message.role === 'system');
+  if (firstSystem < 0) return messages;
+  const trailingIndexes = messages
+    .map((message, index) => (message.role === 'system' && index !== firstSystem ? index : -1))
+    .filter((index) => index >= 0);
+  if (trailingIndexes.length === 0) return messages;
+  const trailingSet = new Set(trailingIndexes);
+  const mergedContent = [
+    messages[firstSystem]?.content,
+    ...trailingIndexes.map((index) => messages[index]?.content),
+  ]
+    .filter((content): content is string => typeof content === 'string' && content.length > 0)
+    .join('\n\n');
+  const out: T[] = [];
+  for (let index = 0; index < messages.length; index += 1) {
+    if (trailingSet.has(index)) continue;
+    if (index === firstSystem) {
+      out.push({ ...messages[index], content: mergedContent } as T);
+      continue;
+    }
+    out.push(messages[index] as T);
+  }
+  return out;
+}
+
 function mapFinishReason(doneReason: unknown): 'stop' | 'length' {
   return doneReason === 'length' ? 'length' : 'stop';
 }
@@ -334,7 +369,7 @@ export async function* streamChatOllama(
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model,
-        messages: normalizeTrailingAssistants(toNativeMessages(request)),
+        messages: normalizeSystemPlacement(normalizeTrailingAssistants(toNativeMessages(request))),
         stream: true,
         options: toNativeOptions(request),
       }),
