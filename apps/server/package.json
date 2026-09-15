@@ -21,6 +21,6 @@
   },
   "devDependencies": {
     "bun-types": "1.4.2",
-    "vitest": "5.0.0"
+    "vitest": "5.0.1"
   }
 }
